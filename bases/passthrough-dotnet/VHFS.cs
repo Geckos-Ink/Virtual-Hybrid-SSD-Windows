@@ -70,7 +70,7 @@ namespace VHSSD
         {
             //todo: handle replace
             var file = GetFile(fileName);
-            file.parent.files.Unset(file.name.ToLower());
+            file.parent.files.Unset(file.name);
 
             AddFile(file, newFileName);
         }
@@ -114,7 +114,7 @@ namespace VHSSD
             public void AddFile(File file)
             {
                 file.parent = this;
-                files.Set(file.name.ToLower(), file);
+                files.Set(file.name, file);
             }
 
 
@@ -122,8 +122,6 @@ namespace VHSSD
             {
                 if (String.IsNullOrEmpty(name))
                     return this;
-
-                name = name.ToLower();
 
                 return files.Get(name)?.value;
             }

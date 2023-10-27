@@ -39,6 +39,8 @@ namespace VHSSD
 
         public Tree<T> Get(string key)
         {
+            key = key.ToLower();
+
             var l = this;
             for(int i=0; i<key.Length; i++)
             {
@@ -72,6 +74,9 @@ namespace VHSSD
 
         public void Set(string key, T value)
         {
+            keys.Add(key);
+            key = key.ToLower();
+
             var l = this;
             for (int i = 0; i < key.Length; i++)
             {
@@ -102,8 +107,6 @@ namespace VHSSD
             }
 
             l.value = value;
-
-            keys.Add(key);
         }
 
 
@@ -112,7 +115,6 @@ namespace VHSSD
             var l = Get(key);
 
             l.value = default(T);
-
            
             while(l != null)
             {
