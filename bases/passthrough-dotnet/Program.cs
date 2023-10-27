@@ -28,6 +28,7 @@ using System.Security.AccessControl;
 using Fsp;
 using VolumeInfo = Fsp.Interop.VolumeInfo;
 using FileInfo = Fsp.Interop.FileInfo;
+using System.Collections.Generic;
 
 namespace VHSSD
 {
@@ -650,6 +651,18 @@ namespace VHSSD
             UInt64 ChangeTime,
             out FileInfo FileInfo)
         {
+            var file = (VHFS.File)FileDesc0;
+
+            file.attributes.FileAttributes = FileAttributes;
+            file.attributes.CreationTime = CreationTime;
+            file.attributes.LastAccessTime = LastAccessTime;
+            file.attributes.LastWriteTime = LastWriteTime;
+            file.attributes.ChangeTime = ChangeTime;
+
+            FileInfo = file.GetFileInfo();
+
+            return STATUS_SUCCESS;
+
             FileDesc FileDesc = (FileDesc)FileDesc0;
             FileDesc.SetBasicInfo(FileAttributes, CreationTime, LastAccessTime, LastWriteTime);
             return FileDesc.GetFileInfo(out FileInfo);
@@ -661,6 +674,13 @@ namespace VHSSD
             Boolean SetAllocationSize,
             out FileInfo FileInfo)
         {
+            var file = (VHFS.File)FileDesc0;
+
+            file.SetSize(NewSize);
+            FileInfo = file.GetFileInfo();
+
+            return STATUS_SUCCESS;
+
             FileDesc FileDesc = (FileDesc)FileDesc0;
             if (!SetAllocationSize || (UInt64)FileDesc.Stream.Length > NewSize)
             {
@@ -699,8 +719,8 @@ namespace VHSSD
             Object FileDesc0,
             ref Byte[] SecurityDescriptor)
         {
-            FileDesc FileDesc = (FileDesc)FileDesc0;
-            SecurityDescriptor = FileDesc.GetSecurityDescriptor();
+            var file = (VHFS.File)FileDesc0;
+            SecurityDescriptor = file.attributes.SecurityDescription;
             return STATUS_SUCCESS;
         }
         public override Int32 SetSecurity(
@@ -709,10 +729,14 @@ namespace VHSSD
             AccessControlSections Sections,
             Byte[] SecurityDescriptor)
         {
-            FileDesc FileDesc = (FileDesc)FileDesc0;
-            FileDesc.SetSecurityDescriptor(Sections, SecurityDescriptor);
+            var file = (VHFS.File)FileDesc0;
+
+            file.attributes.SecurityDescription = SecurityDescriptor;
+            //todo: implement Sections...
+
             return STATUS_SUCCESS;
         }
+
         public override Boolean ReadDirectoryEntry(
             Object FileNode,
             Object FileDesc0,
@@ -722,6 +746,62 @@ namespace VHSSD
             out String FileName,
             out FileInfo FileInfo)
         {
+            var dir = (VHFS.File) FileDesc0;
+
+            var files = dir.ListFiles();
+
+            IEnumerator<String> Enumerator = (IEnumerator<String>)Context;
+
+            if (null == Enumerator)
+            {
+                List<String> ChildrenFileNames = new List<String>();
+                if ("\\" != dir.name)
+                {
+                    /* if this is not the root directory add the dot entries */
+                    if (null == Marker)
+                        ChildrenFileNames.Add(".");
+                    if (null == Marker || "." == Marker)
+                        ChildrenFileNames.Add("..");
+                }
+                ChildrenFileNames.AddRange(files);
+                Context = Enumerator = ChildrenFileNames.GetEnumerator();
+            }
+
+            while (Enumerator.MoveNext())
+            {
+                String FullFileName = Enumerator.Current;
+                if ("." == FullFileName)
+                {
+                    FileName = ".";
+                    FileInfo = dir.GetFileInfo();
+                    return true;
+                }
+                else if (".." == FullFileName)
+                {
+                    var parent = dir.parent;
+                    if (parent != null)
+                    {
+                        FileName = "..";
+                        FileInfo = parent.GetFileInfo();
+                        return true;
+                    }
+                }
+                else
+                {
+                    FileName = Path.GetFileName(FullFileName);
+                    var file = dir.GetFile(FileName);
+                    if (file != null)
+                    {
+                        FileInfo = file.GetFileInfo();
+                        return true;
+                    }
+                }
+            }
+
+            FileName = default(String);
+            FileInfo = default(FileInfo);
+            return false;
+
             FileDesc FileDesc = (FileDesc)FileDesc0;
             if (null == FileDesc.FileSystemInfos)
             {

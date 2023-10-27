@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -90,6 +91,11 @@ namespace VHSSD
                 return files.Get(name)?.value;
             }
 
+            public List<string> ListFiles()
+            {
+                return files?.keys;
+            }
+
             #endregion
 
             #region File
@@ -112,11 +118,7 @@ namespace VHSSD
                 
                 if(attributes.FileSize < Offset + Length)
                 {
-                    var largerBytes = new byte[Offset + Length];
-                    Array.Copy(bytes, largerBytes, bytes.Length);
-                    bytes = largerBytes;
-
-                    attributes.FileSize = (ulong)bytes.Length;
+                    SetSize(Offset + Length);
                 }
 
                 Array.Copy(Bytes, 0, bytes, (int)Offset, Length);
@@ -129,6 +131,15 @@ namespace VHSSD
                 PBytesTransferred = (UInt32)Bytes.Length;
 
                 FileInfo = GetFileInfo();
+            }
+
+            public void SetSize(UInt64 NewSize, Boolean SetAllocationSize = false)
+            {
+                var largerBytes = new byte[NewSize];
+                Array.Copy(bytes, largerBytes, bytes.Length);
+                bytes = largerBytes;
+
+                attributes.FileSize = NewSize;
             }
 
             public void Flush()

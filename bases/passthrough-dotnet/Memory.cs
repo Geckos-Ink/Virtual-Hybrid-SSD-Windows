@@ -12,13 +12,17 @@ namespace VHSSD
         public int level = 0;
         public char key;
 
+        public List<string> keys;
         public Dictionary<char, Tree<T>> tree;
 
         public string jumpTo;
 
         public T value;
 
-        public Tree() { }
+        public Tree()
+        {
+            keys = new List<string>();
+        }
 
         public Tree(Tree<T> parent, char key)
         {
@@ -98,6 +102,8 @@ namespace VHSSD
             }
 
             l.value = value;
+
+            keys.Add(key);
         }
 
 
@@ -128,6 +134,8 @@ namespace VHSSD
 
                 l = l.parent;
             }
+
+            keys.Remove(key);
         }
 
     }
