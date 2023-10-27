@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Mime;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -75,7 +76,6 @@ namespace VHSSD
             AddFile(file, newFileName);
         }
 
-
         public class File
         {
             public VHFS fs;
@@ -129,6 +129,16 @@ namespace VHSSD
             public List<string> ListFiles()
             {
                 return files?.keys;
+            }
+
+            public void Remove()
+            {
+                parent.Remove(name);
+            }
+
+            public void Remove(string name)
+            {
+                files.Unset(name);
             }
 
             #endregion

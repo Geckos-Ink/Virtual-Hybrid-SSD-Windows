@@ -44,20 +44,25 @@ namespace VHSSD
             var l = this;
             for(int i=0; i<key.Length; i++)
             {
-                l = l.Get(key[i]);
-
-                if (l == null)
-                    break;
-
                 if (!String.IsNullOrEmpty(l.jumpTo))
                 {
                     var len = l.jumpTo.Length;
-                    if(l.jumpTo == key.Substring(i+1, len))
+                    if ((i + len + 1) <= key.Length && l.jumpTo == key.Substring(i + 1, len))
                         i += len;
-                }
 
-                if (key.Length-1 == i)
-                    return l;
+                    if (key.Length - 1 == i)
+                        return l;
+                }
+                else
+                {
+                    l = l.Get(key[i]);
+
+                    if (l == null)
+                        break;
+
+                    if (key.Length - 1 == i)
+                        return l;
+                }
             }
 
             return null;
@@ -74,15 +79,16 @@ namespace VHSSD
 
         public void Set(string key, T value)
         {
-            keys.Add(key);
-            key = key.ToLower();
+            bool exists = true;
+
+            var lkey = key.ToLower();
 
             var l = this;
-            for (int i = 0; i < key.Length; i++)
+            for (int i = 0; i < lkey.Length; i++)
             {
                 if (l.tree == null && String.IsNullOrEmpty(l.jumpTo))
                 {
-                    l.jumpTo = key.Substring(i);
+                    l.jumpTo = lkey.Substring(i);
                     break;
                 }
                 else
@@ -96,15 +102,19 @@ namespace VHSSD
                         l.value = default(T);
                     }
 
-                    var nextL = l.Get(key[i]);
+                    var nextL = l.Get(lkey[i]);
 
                     if (nextL == null)
                     {
-                        nextL = new Tree<T>(l, key[i]);
+                        exists = false;
+                        nextL = new Tree<T>(l, lkey[i]);
                         l = nextL;
                     }
                 }
             }
+
+            if(!exists)
+                keys.Add(key);
 
             l.value = value;
         }
@@ -120,7 +130,7 @@ namespace VHSSD
             {
                 if (l.value == null && l.tree == null)
                 {
-                    l.parent.tree.Remove(l.key);
+                    l.parent?.tree.Remove(l.key);
                 }
 
                 if (l.tree?.Count == 1)

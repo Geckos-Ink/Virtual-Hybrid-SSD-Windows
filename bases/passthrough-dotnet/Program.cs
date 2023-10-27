@@ -419,48 +419,6 @@ namespace VHSSD
                 FileInfo = file.GetFileInfo();
 
                 return STATUS_SUCCESS;
-                
-                if(false)
-                {
-                    FileName = ConcatPath(FileName);
-                    if (0 == (CreateOptions & FILE_DIRECTORY_FILE))
-                    {
-                        FileSecurity Security = null;
-                        if (null != SecurityDescriptor)
-                        {
-                            Security = new FileSecurity();
-                            Security.SetSecurityDescriptorBinaryForm(SecurityDescriptor);
-                        }
-                        FileDesc = new FileDesc(
-                            new FileStream(
-                                FileName,
-                                FileMode.CreateNew,
-                                (FileSystemRights)GrantedAccess | FileSystemRights.WriteAttributes,
-                                FileShare.Read | FileShare.Write | FileShare.Delete,
-                                4096,
-                                0,
-                                Security));
-                        FileDesc.SetFileAttributes(FileAttributes | (UInt32)System.IO.FileAttributes.Archive);
-                    }
-                    else
-                    {
-                        if (Directory.Exists(FileName))
-                            ThrowIoExceptionWithNtStatus(STATUS_OBJECT_NAME_COLLISION);
-                        DirectorySecurity Security = null;
-                        if (null != SecurityDescriptor)
-                        {
-                            Security = new DirectorySecurity();
-                            Security.SetSecurityDescriptorBinaryForm(SecurityDescriptor);
-                        }
-                        FileDesc = new FileDesc(
-                            Directory.CreateDirectory(FileName, Security));
-                        FileDesc.SetFileAttributes(FileAttributes);
-                    }
-                    FileNode = default(Object);
-                    FileDesc0 = FileDesc;
-                    NormalizedName = default(String);
-                    return FileDesc.GetFileInfo(out FileInfo);
-                }
             }
             catch
             {
@@ -491,31 +449,6 @@ namespace VHSSD
                 FileInfo = file.GetFileInfo();
                 return STATUS_SUCCESS;
 
-                if (false)
-                {
-                    FileDesc FileDesc = null;
-                    FileName = ConcatPath(FileName);
-                    if (!Directory.Exists(FileName))
-                    {
-                        FileDesc = new FileDesc(
-                            new FileStream(
-                                FileName,
-                                FileMode.Open,
-                                (FileSystemRights)GrantedAccess,
-                                FileShare.Read | FileShare.Write | FileShare.Delete,
-                                4096,
-                                0));
-                    }
-                    else
-                    {
-                        FileDesc = new FileDesc(
-                            new DirectoryInfo(FileName));
-                    }
-                    FileNode = default(Object);
-                    FileDesc0 = FileDesc;
-                    NormalizedName = default(String);
-                    return FileDesc.GetFileInfo(out FileInfo);
-                }
             }
             catch
             {
@@ -550,7 +483,11 @@ namespace VHSSD
         {
             var file = (VHFS.File)FileDesc0;
 
-            //todo
+            if ((Flags & CleanupDelete) != 0)
+            {
+                file.Remove();   
+            }
+
             return;
 
             FileDesc FileDesc = (FileDesc)FileDesc0;
@@ -710,8 +647,11 @@ namespace VHSSD
             Object FileDesc0,
             String FileName)
         {
-            FileDesc FileDesc = (FileDesc)FileDesc0;
-            FileDesc.SetDisposition(false);
+            var file = (VHFS.File)FileDesc0;
+
+            if (file.isDirectory && file.files.keys.Count > 0)
+                return STATUS_DIRECTORY_NOT_EMPTY;
+
             return STATUS_SUCCESS;
         }
         public override Int32 Rename(
