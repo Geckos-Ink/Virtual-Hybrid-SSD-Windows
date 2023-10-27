@@ -28,9 +28,8 @@ using System.Security.AccessControl;
 using Fsp;
 using VolumeInfo = Fsp.Interop.VolumeInfo;
 using FileInfo = Fsp.Interop.FileInfo;
-using VHSSD;
 
-namespace passthrough
+namespace VHSSD
 {
     class Ptfs : FileSystemBase
     {
@@ -49,7 +48,7 @@ namespace passthrough
             ThrowIoExceptionWithWin32((Int32)Win32FromNtStatus(Status));
         }
 
-        protected class FileDesc
+        public class FileDesc
         {
             public FileStream Stream;
             public DirectoryInfo DirInfo;
@@ -88,6 +87,7 @@ namespace passthrough
                     if (!GetFileInformationByHandle(Stream.SafeFileHandle.DangerousGetHandle(),
                         out Info))
                         ThrowIoExceptionWithWin32(Marshal.GetLastWin32Error());
+
                     FileInfo.FileAttributes = Info.dwFileAttributes;
                     FileInfo.ReparseTag = 0;
                     FileInfo.FileSize = (UInt64)Stream.Length;
@@ -237,6 +237,8 @@ namespace passthrough
             {
                 public Boolean DeleteFile;
             }
+
+            
             [DllImport("kernel32.dll", SetLastError = true)]
             private static extern Boolean GetFileInformationByHandle(
                 IntPtr hFile,
@@ -268,6 +270,7 @@ namespace passthrough
                 IntPtr Handle,
                 Int32 SecurityInformation,
                 Byte[] SecurityDescriptor);
+            
         }
 
         private class DirectoryEntryComparer : IComparer
@@ -382,44 +385,76 @@ namespace passthrough
             FileDesc FileDesc = null;
             try
             {
-                FileName = ConcatPath(FileName);
-                if (0 == (CreateOptions & FILE_DIRECTORY_FILE))
+                if (true)
                 {
-                    FileSecurity Security = null;
-                    if (null != SecurityDescriptor)
+                    FileName = ConcatPath(FileName);
+
+                    VHFS.File file;
+
+                    if (0 == (CreateOptions & FILE_DIRECTORY_FILE))
                     {
-                        Security = new FileSecurity();
-                        Security.SetSecurityDescriptorBinaryForm(SecurityDescriptor);
+                        file = new VHFS.File(false);
+
+                        file.attributes.SecurityDescription = SecurityDescriptor;
+                        file.attributes.GrantedAccess = GrantedAccess;
+                        file.attributes.FileAttributes = FileAttributes;
                     }
-                    FileDesc = new FileDesc(
-                        new FileStream(
-                            FileName,
-                            FileMode.CreateNew,
-                            (FileSystemRights)GrantedAccess | FileSystemRights.WriteAttributes,
-                            FileShare.Read | FileShare.Write | FileShare.Delete,
-                            4096,
-                            0,
-                            Security));
-                    FileDesc.SetFileAttributes(FileAttributes | (UInt32)System.IO.FileAttributes.Archive);
+                    else
+                    {
+                        file = new VHFS.File(false);
+
+                        file.attributes.SecurityDescription = SecurityDescriptor;
+                        file.attributes.FileAttributes = FileAttributes;
+                    }
+
+                    FileNode = default(Object);
+                    FileDesc0 = file;
+                    NormalizedName = default(String);
+                    FileInfo = file.GetFileInfo();
+
+                    return STATUS_SUCCESS;
                 }
                 else
                 {
-                    if (Directory.Exists(FileName))
-                        ThrowIoExceptionWithNtStatus(STATUS_OBJECT_NAME_COLLISION);
-                    DirectorySecurity Security = null;
-                    if (null != SecurityDescriptor)
+                    FileName = ConcatPath(FileName);
+                    if (0 == (CreateOptions & FILE_DIRECTORY_FILE))
                     {
-                        Security = new DirectorySecurity();
-                        Security.SetSecurityDescriptorBinaryForm(SecurityDescriptor);
+                        FileSecurity Security = null;
+                        if (null != SecurityDescriptor)
+                        {
+                            Security = new FileSecurity();
+                            Security.SetSecurityDescriptorBinaryForm(SecurityDescriptor);
+                        }
+                        FileDesc = new FileDesc(
+                            new FileStream(
+                                FileName,
+                                FileMode.CreateNew,
+                                (FileSystemRights)GrantedAccess | FileSystemRights.WriteAttributes,
+                                FileShare.Read | FileShare.Write | FileShare.Delete,
+                                4096,
+                                0,
+                                Security));
+                        FileDesc.SetFileAttributes(FileAttributes | (UInt32)System.IO.FileAttributes.Archive);
                     }
-                    FileDesc = new FileDesc(
-                        Directory.CreateDirectory(FileName, Security));
-                    FileDesc.SetFileAttributes(FileAttributes);
+                    else
+                    {
+                        if (Directory.Exists(FileName))
+                            ThrowIoExceptionWithNtStatus(STATUS_OBJECT_NAME_COLLISION);
+                        DirectorySecurity Security = null;
+                        if (null != SecurityDescriptor)
+                        {
+                            Security = new DirectorySecurity();
+                            Security.SetSecurityDescriptorBinaryForm(SecurityDescriptor);
+                        }
+                        FileDesc = new FileDesc(
+                            Directory.CreateDirectory(FileName, Security));
+                        FileDesc.SetFileAttributes(FileAttributes);
+                    }
+                    FileNode = default(Object);
+                    FileDesc0 = FileDesc;
+                    NormalizedName = default(String);
+                    return FileDesc.GetFileInfo(out FileInfo);
                 }
-                FileNode = default(Object);
-                FileDesc0 = FileDesc;
-                NormalizedName = default(String);
-                return FileDesc.GetFileInfo(out FileInfo);
             }
             catch
             {
