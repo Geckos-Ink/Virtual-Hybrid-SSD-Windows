@@ -336,6 +336,12 @@ namespace VHSSD
             out VolumeInfo VolumeInfo)
         {
             VolumeInfo = default(VolumeInfo);
+
+            VolumeInfo.TotalSize = (ulong)1024 * 1024 * 1024 * 100;
+            VolumeInfo.FreeSize = VolumeInfo.TotalSize;
+
+            return STATUS_SUCCESS;
+
             try
             {
                 DriveInfo Info = new DriveInfo(_Path);
@@ -356,19 +362,17 @@ namespace VHSSD
             out UInt32 FileAttributes/* or ReparsePointIndex */,
             ref Byte[] SecurityDescriptor)
         {
-            FileName = ConcatPath(FileName);
-            System.IO.FileInfo Info = new System.IO.FileInfo(FileName);
-            FileAttributes = (UInt32)Info.Attributes;
-            if (null != SecurityDescriptor)
+            var file = vhfs.GetFile(FileName);
+
+            if (file == null)
             {
-                try
-                {
-                    SecurityDescriptor = Info.GetAccessControl().GetSecurityDescriptorBinaryForm();
-                }
-                catch {
-                    return STATUS_FILE_DELETED;
-                }
+                FileAttributes = 0;
+                return STATUS_OBJECT_NAME_NOT_FOUND;
             }
+
+            FileAttributes = file.attributes.FileAttributes;
+            SecurityDescriptor = file.attributes.SecurityDescription;
+
             return STATUS_SUCCESS;
         }
 
@@ -387,7 +391,7 @@ namespace VHSSD
             FileDesc FileDesc = null;
             try
             {
-                FileName = ConcatPath(FileName);
+                //FileName = ConcatPath(FileName);
 
                 VHFS.File file;
 
@@ -406,6 +410,8 @@ namespace VHSSD
                     file.attributes.SecurityDescription = SecurityDescriptor;
                     file.attributes.FileAttributes = FileAttributes;
                 }
+
+                vhfs.AddFile(file, FileName);
 
                 FileNode = default(Object);
                 FileDesc0 = file;
@@ -473,20 +479,21 @@ namespace VHSSD
             out FileInfo FileInfo,
             out String NormalizedName)
         {
-            FileDesc FileDesc = null;
+
+            //FileName = ConcatPath(FileName);
+            var file = vhfs.GetFile(FileName);
+
             try
             {
-                FileName = ConcatPath(FileName);
-                var file = vhfs.root.GetFile(FileName);
-
                 FileNode = default(Object);
-                FileDesc0 = FileDesc;
+                FileDesc0 = file;
                 NormalizedName = default(String);
                 FileInfo = file.GetFileInfo();
                 return STATUS_SUCCESS;
 
                 if (false)
                 {
+                    FileDesc FileDesc = null;
                     FileName = ConcatPath(FileName);
                     if (!Directory.Exists(FileName))
                     {
@@ -512,8 +519,8 @@ namespace VHSSD
             }
             catch
             {
-                if (null != FileDesc && null != FileDesc.Stream)
-                    FileDesc.Stream.Dispose();
+                if (null != file && !file.open)
+                    file.Dispose();
                 throw;
             }
         }
@@ -541,6 +548,11 @@ namespace VHSSD
             String FileName,
             UInt32 Flags)
         {
+            var file = (VHFS.File)FileDesc0;
+
+            //todo
+            return;
+
             FileDesc FileDesc = (FileDesc)FileDesc0;
             if (0 != (Flags & CleanupDelete))
             {
@@ -709,9 +721,11 @@ namespace VHSSD
             String NewFileName,
             Boolean ReplaceIfExists)
         {
-            FileName = ConcatPath(FileName);
-            NewFileName = ConcatPath(NewFileName);
-            FileDesc.Rename(FileName, NewFileName, ReplaceIfExists);
+            //FileName = ConcatPath(FileName);
+            //NewFileName = ConcatPath(NewFileName);
+
+            vhfs.Rename(FileName, NewFileName, ReplaceIfExists);
+
             return STATUS_SUCCESS;
         }
         public override Int32 GetSecurity(

@@ -35,6 +35,52 @@ namespace VHSSD
             Console.WriteLine("test");
         }
 
+        public File GetFile(string path)
+        {
+            path = path.ToLower();
+            var dirs = path.Substring(1).Split('\\');
+
+            var cfile = root;
+            foreach(var dir in dirs)
+            {
+                cfile = cfile.GetFile(dir);
+
+                if (cfile == null)
+                    break;
+            }
+
+            return cfile;
+        }
+
+        public void AddFile(File file, string path)
+        {
+            path = path.ToLower();
+            var dirs = path.Substring(1).Split('\\');
+            file.name = dirs[dirs.Length - 1];
+
+            var cfile = root;
+            for (int d = 0; d < dirs.Length - 2; d++)
+            {
+                var dir = dirs[d];
+                cfile = cfile.GetFile(dir);
+            }
+
+            cfile.AddFile(file);
+        }
+
+        public void Rename(string fileName, string newFileName, bool replace)
+        {
+            fileName = fileName.ToLower();
+            newFileName = newFileName.ToLower();
+
+            //todo: handle replace
+            var file = GetFile(fileName);
+            file.parent.files.Unset(file.name);
+
+            AddFile(file, newFileName);
+        }
+
+
         public class File
         {
             public VHFS fs;
@@ -44,6 +90,8 @@ namespace VHSSD
             public string name;
             public File parent;
             public bool isDirectory;
+
+            public bool open = false;
 
             // File
             public Int64 length;
@@ -61,6 +109,8 @@ namespace VHSSD
                 if (isDirectory)
                 {
                     files = new Tree<File>();
+
+                    attributes.FileAttributes = (uint)FileAttributes.Directory;
                 }
             }
 
@@ -71,23 +121,12 @@ namespace VHSSD
                 files.Set(file.name, file);
             }
 
-            public void AddFile(File file, string path)
-            {
-                var dirs = path.Split('\\');
-                var name = dirs[dirs.Length - 1];
-
-                var cfile = this;
-                for(int d=0; d<dirs.Length-2; d++)
-                {
-                    var dir = dirs[d];
-                    cfile = cfile.GetFile(dir);
-                }
-
-                cfile.AddFile(file);
-            }
 
             public File GetFile(string name)
             {
+                if (String.IsNullOrEmpty(name))
+                    return this;
+
                 return files.Get(name)?.value;
             }
 
