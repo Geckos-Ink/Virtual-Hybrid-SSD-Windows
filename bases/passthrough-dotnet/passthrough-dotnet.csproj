@@ -60,6 +60,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Memory.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="VHFS.cs" />
   </ItemGroup>

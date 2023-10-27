@@ -8,19 +8,32 @@ namespace VHSSD
 {
     public class Tree<T>
     {
+        public Tree<T> parent;
         public int level = 0;
+        public char key;
+
         public Dictionary<char, Tree<T>> tree;
+
+        public string jumpTo;
 
         public T value;
 
         public Tree() { }
 
-        public Tree(Tree<T> parent)
+        public Tree(Tree<T> parent, char key)
         {
+            this.parent = parent;
+
+            if(parent.tree == null)
+                parent.tree = new Dictionary<char, Tree<T>>();
+
+            parent.tree[key] = this;
+
             this.level = parent.level + 1;
+            this.key = key;
         }
 
-        public T Get(string key)
+        public Tree<T> Get(string key)
         {
             var l = this;
             for(int i=0; i<key.Length; i++)
@@ -30,11 +43,18 @@ namespace VHSSD
                 if (l == null)
                     break;
 
+                if (!String.IsNullOrEmpty(l.jumpTo))
+                {
+                    var len = l.jumpTo.Length;
+                    if(l.jumpTo == key.Substring(i+1, len))
+                        i += len;
+                }
+
                 if (key.Length-1 == i)
-                    return l.value;
+                    return l;
             }
 
-            return default(T);
+            return null;
         }
 
         public Tree<T> Get(char key) { 
@@ -51,16 +71,63 @@ namespace VHSSD
             var l = this;
             for (int i = 0; i < key.Length; i++)
             {
-                var nextL = l.Get(key[i]);
-
-                if(nextL == null)
+                if (l.tree == null && String.IsNullOrEmpty(l.jumpTo))
                 {
-                    nextL = new Tree<T>(l);
-                    l.tree[key[i]] = nextL;
+                    l.jumpTo = key.Substring(i);
+                    break;
+                }
+                else
+                {
+                    if (!String.IsNullOrEmpty(l.jumpTo))
+                    {
+                        l.tree = new Dictionary<char, Tree<T>>();
+                        var jt = l.jumpTo;
+                        l.jumpTo = null;
+                        l.Set(jt, l.value);
+                        l.value = default(T);
+                    }
+
+                    var nextL = l.Get(key[i]);
+
+                    if (nextL == null)
+                    {
+                        nextL = new Tree<T>(l, key[i]);
+                        l = nextL;
+                    }
                 }
             }
 
             l.value = value;
+        }
+
+
+        public void Unset(string key)
+        {
+            var l = Get(key);
+
+            l.value = default(T);
+
+           
+            while(l != null)
+            {
+                if (l.value == null && l.tree == null)
+                {
+                    l.parent.tree.Remove(l.key);
+                }
+
+                if (l.tree?.Count == 1)
+                {
+                    var keys = l.tree.Keys;
+                    var k = keys.ElementAt(0);
+                    var jt = l.tree[k];
+                    l.jumpTo = k + (jt.jumpTo ?? "");
+                    l.value = jt.value;
+                    l.tree = jt.tree;
+                    l.tree = null;
+                }
+
+                l = l.parent;
+            }
         }
 
     }

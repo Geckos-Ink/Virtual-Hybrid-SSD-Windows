@@ -28,6 +28,7 @@ using System.Security.AccessControl;
 using Fsp;
 using VolumeInfo = Fsp.Interop.VolumeInfo;
 using FileInfo = Fsp.Interop.FileInfo;
+using VHSSD;
 
 namespace passthrough
 {
@@ -853,6 +854,8 @@ namespace passthrough
     {
         static void Main(string[] args)
         {
+            var vhfs = new VHFS();
+
             Environment.ExitCode = new PtfsService().Run();
         }
     }
