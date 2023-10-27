@@ -2,9 +2,12 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Mime;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using static VHSSD.Ptfs;
 
 namespace VHSSD
 {
@@ -60,6 +63,8 @@ namespace VHSSD
                 }
             }
 
+            #region Directory
+
             public void AddFile(File file)
             {
                 files.Set(file.name, file);
@@ -83,6 +88,59 @@ namespace VHSSD
             public File GetFile(string name)
             {
                 return files.Get(name)?.value;
+            }
+
+            #endregion
+
+            #region File
+
+            // Temporary ram-disk solution
+            public byte[] bytes = new byte[0];
+
+            public void Read(IntPtr Buffer, UInt64 Offset, UInt32 Length,  out UInt32 PBytesTransferred)
+            {
+                Byte[] Bytes = new byte[Length];
+                Array.Copy(bytes, (int)Offset, Bytes, 0, Length);
+                PBytesTransferred = Length;
+                Marshal.Copy(Bytes, 0, Buffer, Bytes.Length);
+            }
+
+            public void Write(IntPtr Buffer,  UInt64 Offset, UInt32 Length, Boolean WriteToEndOfFile, Boolean ConstrainedIo, out UInt32 PBytesTransferred, out Fsp.Interop.FileInfo FileInfo)
+            {
+                Byte[] Bytes = new byte[Length];
+                Marshal.Copy(Buffer, Bytes, 0, Bytes.Length);
+                
+                if(attributes.FileSize < Offset + Length)
+                {
+                    var largerBytes = new byte[Offset + Length];
+                    Array.Copy(bytes, largerBytes, bytes.Length);
+                    bytes = largerBytes;
+
+                    attributes.FileSize = (ulong)bytes.Length;
+                }
+
+                Array.Copy(Bytes, 0, bytes, (int)Offset, Length);
+
+                if (WriteToEndOfFile)
+                {
+                    bytes = bytes.Skip((int)(Offset+Length)).ToArray();
+                }
+
+                PBytesTransferred = (UInt32)Bytes.Length;
+
+                FileInfo = GetFileInfo();
+            }
+
+            public void Flush()
+            {
+                //todo
+            }
+
+            #endregion
+
+            public void Dispose()
+            {
+                //todo
             }
 
             public Fsp.Interop.FileInfo GetFileInfo()

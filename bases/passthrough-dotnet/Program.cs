@@ -370,6 +370,7 @@ namespace VHSSD
             }
             return STATUS_SUCCESS;
         }
+
         public override Int32 Create(
             String FileName,
             UInt32 CreateOptions,
@@ -385,36 +386,34 @@ namespace VHSSD
             FileDesc FileDesc = null;
             try
             {
-                if (true)
+                FileName = ConcatPath(FileName);
+
+                VHFS.File file;
+
+                if (0 == (CreateOptions & FILE_DIRECTORY_FILE))
                 {
-                    FileName = ConcatPath(FileName);
+                    file = new VHFS.File(false);
 
-                    VHFS.File file;
-
-                    if (0 == (CreateOptions & FILE_DIRECTORY_FILE))
-                    {
-                        file = new VHFS.File(false);
-
-                        file.attributes.SecurityDescription = SecurityDescriptor;
-                        file.attributes.GrantedAccess = GrantedAccess;
-                        file.attributes.FileAttributes = FileAttributes;
-                    }
-                    else
-                    {
-                        file = new VHFS.File(false);
-
-                        file.attributes.SecurityDescription = SecurityDescriptor;
-                        file.attributes.FileAttributes = FileAttributes;
-                    }
-
-                    FileNode = default(Object);
-                    FileDesc0 = file;
-                    NormalizedName = default(String);
-                    FileInfo = file.GetFileInfo();
-
-                    return STATUS_SUCCESS;
+                    file.attributes.SecurityDescription = SecurityDescriptor;
+                    file.attributes.GrantedAccess = GrantedAccess;
+                    file.attributes.FileAttributes = FileAttributes;
                 }
                 else
+                {
+                    file = new VHFS.File(false);
+
+                    file.attributes.SecurityDescription = SecurityDescriptor;
+                    file.attributes.FileAttributes = FileAttributes;
+                }
+
+                FileNode = default(Object);
+                FileDesc0 = file;
+                NormalizedName = default(String);
+                FileInfo = file.GetFileInfo();
+
+                return STATUS_SUCCESS;
+                
+                if(false)
                 {
                     FileName = ConcatPath(FileName);
                     if (0 == (CreateOptions & FILE_DIRECTORY_FILE))
@@ -463,6 +462,7 @@ namespace VHSSD
                 throw;
             }
         }
+
         public override Int32 Open(
             String FileName,
             UInt32 CreateOptions,
@@ -476,26 +476,38 @@ namespace VHSSD
             try
             {
                 FileName = ConcatPath(FileName);
-                if (!Directory.Exists(FileName))
-                {
-                    FileDesc = new FileDesc(
-                        new FileStream(
-                            FileName,
-                            FileMode.Open,
-                            (FileSystemRights)GrantedAccess,
-                            FileShare.Read | FileShare.Write | FileShare.Delete,
-                            4096,
-                            0));
-                }
-                else
-                {
-                    FileDesc = new FileDesc(
-                        new DirectoryInfo(FileName));
-                }
+                var file = vhfs.root.GetFile(FileName);
+
                 FileNode = default(Object);
                 FileDesc0 = FileDesc;
                 NormalizedName = default(String);
-                return FileDesc.GetFileInfo(out FileInfo);
+                FileInfo = file.GetFileInfo();
+                return STATUS_SUCCESS;
+
+                if (false)
+                {
+                    FileName = ConcatPath(FileName);
+                    if (!Directory.Exists(FileName))
+                    {
+                        FileDesc = new FileDesc(
+                            new FileStream(
+                                FileName,
+                                FileMode.Open,
+                                (FileSystemRights)GrantedAccess,
+                                FileShare.Read | FileShare.Write | FileShare.Delete,
+                                4096,
+                                0));
+                    }
+                    else
+                    {
+                        FileDesc = new FileDesc(
+                            new DirectoryInfo(FileName));
+                    }
+                    FileNode = default(Object);
+                    FileDesc0 = FileDesc;
+                    NormalizedName = default(String);
+                    return FileDesc.GetFileInfo(out FileInfo);
+                }
             }
             catch
             {
@@ -540,9 +552,8 @@ namespace VHSSD
             Object FileNode,
             Object FileDesc0)
         {
-            FileDesc FileDesc = (FileDesc)FileDesc0;
-            if (null != FileDesc.Stream)
-                FileDesc.Stream.Dispose();
+            var file = (VHFS.File)FileDesc0;
+            file.Dispose();
         }
         public override Int32 Read(
             Object FileNode,
@@ -552,15 +563,16 @@ namespace VHSSD
             UInt32 Length,
             out UInt32 PBytesTransferred)
         {
-            FileDesc FileDesc = (FileDesc)FileDesc0;
-            if (Offset >= (UInt64)FileDesc.Stream.Length)
+            var file = (VHFS.File)FileDesc0;
+
+            if (Offset >= (UInt64)file.attributes.FileSize)
                 ThrowIoExceptionWithNtStatus(STATUS_END_OF_FILE);
-            Byte[] Bytes = new byte[Length];
-            FileDesc.Stream.Seek((Int64)Offset, SeekOrigin.Begin);
-            PBytesTransferred = (UInt32)FileDesc.Stream.Read(Bytes, 0, Bytes.Length);
-            Marshal.Copy(Bytes, 0, Buffer, Bytes.Length);
+
+            file.Read(Buffer, Offset, Length, out PBytesTransferred);
+       
             return STATUS_SUCCESS;
         }
+
         public override Int32 Write(
             Object FileNode,
             Object FileDesc0,
@@ -572,6 +584,13 @@ namespace VHSSD
             out UInt32 PBytesTransferred,
             out FileInfo FileInfo)
         {
+            var file = (VHFS.File)FileDesc0;
+
+            file.Write(Buffer, Offset, Length, WriteToEndOfFile, ConstrainedIo, out PBytesTransferred, out FileInfo);
+
+            return STATUS_SUCCESS;
+                
+
             FileDesc FileDesc = (FileDesc)FileDesc0;
             if (ConstrainedIo)
             {
@@ -597,6 +616,11 @@ namespace VHSSD
             Object FileDesc0,
             out FileInfo FileInfo)
         {
+            var file = (VHFS.File)FileDesc0;
+            file.Flush();
+            FileInfo = file.GetFileInfo();
+            return STATUS_SUCCESS;
+
             FileDesc FileDesc = (FileDesc)FileDesc0;
             if (null == FileDesc)
             {
@@ -612,8 +636,9 @@ namespace VHSSD
             Object FileDesc0,
             out FileInfo FileInfo)
         {
-            FileDesc FileDesc = (FileDesc)FileDesc0;
-            return FileDesc.GetFileInfo(out FileInfo);
+            var file = (VHFS.File)FileDesc0;
+            FileInfo = file.GetFileInfo();
+            return STATUS_SUCCESS;
         }
         public override Int32 SetBasicInfo(
             Object FileNode,
