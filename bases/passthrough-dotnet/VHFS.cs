@@ -37,7 +37,6 @@ namespace VHSSD
 
         public File GetFile(string path)
         {
-            path = path.ToLower();
             var dirs = path.Substring(1).Split('\\');
 
             var cfile = root;
@@ -54,7 +53,6 @@ namespace VHSSD
 
         public void AddFile(File file, string path)
         {
-            path = path.ToLower();
             var dirs = path.Substring(1).Split('\\');
             file.name = dirs[dirs.Length - 1];
 
@@ -70,12 +68,9 @@ namespace VHSSD
 
         public void Rename(string fileName, string newFileName, bool replace)
         {
-            fileName = fileName.ToLower();
-            newFileName = newFileName.ToLower();
-
             //todo: handle replace
             var file = GetFile(fileName);
-            file.parent.files.Unset(file.name);
+            file.parent.files.Unset(file.name.ToLower());
 
             AddFile(file, newFileName);
         }
@@ -118,7 +113,8 @@ namespace VHSSD
 
             public void AddFile(File file)
             {
-                files.Set(file.name, file);
+                file.parent = this;
+                files.Set(file.name.ToLower(), file);
             }
 
 
@@ -126,6 +122,8 @@ namespace VHSSD
             {
                 if (String.IsNullOrEmpty(name))
                     return this;
+
+                name = name.ToLower();
 
                 return files.Get(name)?.value;
             }
