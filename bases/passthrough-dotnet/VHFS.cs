@@ -10,6 +10,11 @@ namespace VHSSD
     public class VHFS
     {
         public VHFS() {
+ 
+        }
+
+        void testTree()
+        {
             var test = new Tree<string>();
             test.Set("ciao", "come");
             test.Set("stai", "oggi");

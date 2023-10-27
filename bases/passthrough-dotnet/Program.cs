@@ -282,6 +282,17 @@ namespace passthrough
         private static DirectoryEntryComparer _DirectoryEntryComparer =
             new DirectoryEntryComparer();
 
+        VHFS vhfs;
+        public Ptfs(VHFS vhfs)
+        {
+            this.vhfs = vhfs;
+
+            // Temporary
+            _Path = "temp";
+            if (!Directory.Exists("temp"))
+                Directory.CreateDirectory("temp");
+        }
+
         public Ptfs(String Path0)
         {
             _Path = Path.GetFullPath(Path0);
@@ -345,7 +356,15 @@ namespace passthrough
             System.IO.FileInfo Info = new System.IO.FileInfo(FileName);
             FileAttributes = (UInt32)Info.Attributes;
             if (null != SecurityDescriptor)
-                SecurityDescriptor = Info.GetAccessControl().GetSecurityDescriptorBinaryForm();
+            {
+                try
+                {
+                    SecurityDescriptor = Info.GetAccessControl().GetSecurityDescriptorBinaryForm();
+                }
+                catch {
+                    return STATUS_FILE_DELETED;
+                }
+            }
             return STATUS_SUCCESS;
         }
         public override Int32 Create(
@@ -731,6 +750,21 @@ namespace passthrough
                 Ptfs Ptfs = null;
                 int I;
 
+                MountPoint = "X:";
+                VolumePrefix = "\\vhfs\\test";
+
+                var vhfs = new VHFS();
+
+                Host = new FileSystemHost(Ptfs = new Ptfs(vhfs));
+                Host.Prefix = VolumePrefix;
+                if (0 > Host.Mount(MountPoint, null, true, DebugFlags))
+                    throw new IOException("cannot mount file system");
+                MountPoint = Host.MountPoint();
+                _Host = Host;
+
+
+                return;
+
                 for (I = 1; Args.Length > I; I++)
                 {
                     String Arg = Args[I];
@@ -789,7 +823,7 @@ namespace passthrough
                     if (0 > FileSystemHost.SetDebugLogFile(DebugLogFile))
                         throw new CommandLineUsageException("cannot open debug log file");
 
-                Host = new FileSystemHost(Ptfs = new Ptfs(PassThrough));
+                Host = new FileSystemHost(Ptfs = new Ptfs(vhfs));
                 Host.Prefix = VolumePrefix;
                 if (0 > Host.Mount(MountPoint, null, true, DebugFlags))
                     throw new IOException("cannot mount file system");
@@ -854,8 +888,6 @@ namespace passthrough
     {
         static void Main(string[] args)
         {
-            var vhfs = new VHFS();
-
             Environment.ExitCode = new PtfsService().Run();
         }
     }
