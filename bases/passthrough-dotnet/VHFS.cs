@@ -22,20 +22,6 @@ namespace VHSSD
             root = new File(true);
         }
 
-        void testTree()
-        {
-            var test = new Tree<string>();
-            test.Set("ciao", "come");
-            test.Set("stai", "oggi");
-            test.Set("bene", "e te?");
-
-            var ciao = test.Get("ciao");
-            var stai = test.Get("stai");
-            var bene = test.Get("bene");
-
-            Console.WriteLine("test");
-        }
-
         public File GetFile(string path)
         {
             var dirs = path.Substring(1).Split('\\');
