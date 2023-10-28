@@ -9,6 +9,9 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
+using System.Collections;
+using System.Runtime.CompilerServices;
+using System.CodeDom;
 
 namespace VHSSD
 {
@@ -213,6 +216,78 @@ namespace VHSSD
                 return null;
             }
 
+            public object BytesToObject(byte[] bytes)
+            {
+                if(type.IsValueType)
+                {
+                    if (type == typeof(bool))
+                        return BitConverter.ToBoolean(bytes, 0);
+
+                    if (type == typeof(short))
+                        return BitConverter.ToInt16(bytes, 0);
+
+                    if (type == typeof(ushort))
+                        return BitConverter.ToUInt16(bytes, 0);
+
+                    if (type == typeof(int))
+                        return BitConverter.ToInt32(bytes, 0);
+
+                    if (type == typeof(uint))
+                        return BitConverter.ToUInt32(bytes, 0);
+
+                    if (type == typeof(long))
+                        return BitConverter.ToInt64(bytes, 0);
+
+                    if (type == typeof(ulong))
+                        return BitConverter.ToUInt64(bytes, 0);
+
+                    if (type == typeof(float))
+                        return BitConverter.ToSingle(bytes, 0);
+
+                    if (type == typeof(double))
+                        return BitConverter.ToDouble(bytes, 0);
+
+                    if (type == typeof(string))
+                        return BitConverter.ToString(bytes, 0);
+                }
+                else
+                {
+                    if (type.IsArray)
+                    {
+                        //todo with dynamic management
+                        throw new NotImplementedException();
+
+                        if (type == typeof(byte[]))
+                            return bytes;
+
+                        var arrayOf = db.GetType(type.GetElementType());
+                        List<object> list = new List<object>();
+                        for(int i = 0; i<bytes.Length; i++)
+                        {
+                            var itemData = bytes.Skip(i).Take(arrayOf.size).ToArray();
+                        }
+                    }
+                    else
+                    {
+                        object obj = Activator.CreateInstance(type);
+
+                        int i = 0;
+                        foreach (var member in members.Items)
+                        {
+                            var memberData = bytes.Skip(i).Take(member.Value.size).ToArray();
+                            var val = member.Value.type.BytesToObject(memberData);
+                            member.Value.Set(obj, val);
+  
+                            i += member.Value.size;
+                        }
+
+                        return obj;
+                    }
+                }
+
+                return null;
+            }
+
             class Member
             {
                 public FieldInfo info;
@@ -236,6 +311,11 @@ namespace VHSSD
                 public object Extract(object obj)
                 {
                     return info.GetValue(obj);
+                }
+
+                public void Set(object obj, object val)
+                {
+                    info.SetValue(obj, val);
                 }
             }
         }
@@ -308,6 +388,9 @@ namespace VHSSD
 
             public void Load()
             {
+                if (list.Count > 0)
+                    return;
+
                 int size = getSetType.size;
                 int numRow = (int)file.Length / size;
 
@@ -317,10 +400,25 @@ namespace VHSSD
                 for(long r = 0; r < numRow; r++)
                 {
                     var rowData = data.Skip(pos).Take(size).ToArray();
-
+                    var obj = getSetType.BytesToObject(rowData);
+                    list.Add((T)obj);
 
                     pos += size;              
                 }
+            }
+
+            public void Save()
+            {
+                var res = new List<byte>();
+
+                foreach(T obj in list)
+                {
+                    var bytes = getSetType.ObjToByte(obj);
+                    res.AddRange(res);
+                }
+
+                file.Write(res.ToArray());
+                file.Flush();
             }
         }
 

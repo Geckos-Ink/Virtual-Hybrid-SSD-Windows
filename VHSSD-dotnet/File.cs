@@ -19,10 +19,10 @@ namespace VHSSD
             stream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite);
         }
 
-        public void Write(byte[] data, long pos = 0)
+        public void Write(byte[] data, long pos = -1)
         {
             bool resize = pos == -1;
-            if (resize) pos = 1;
+            if (resize) pos = 0;
 
             // Set the position in the file
             stream.Seek(pos, SeekOrigin.Begin);
@@ -50,11 +50,16 @@ namespace VHSSD
 
         public long Length { get { return stream.Length; } }
 
+        public void Flush()
+        {
+            stream.Flush();
+        }
+
         public void Close()
         {
             if (stream.CanRead)
             {
-                stream.Flush();
+                Flush();
                 stream.Close();
             }
         }
