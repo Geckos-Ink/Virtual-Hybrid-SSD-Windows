@@ -129,8 +129,8 @@ namespace VHSSD
 
             public bool hasDynamicSize = false;
 
-            public bool iterate = false;
-            public Type iterateType;
+            //public bool iterate = false;
+            //public Type iterateType;
 
             public Type(DB db, System.Type type)
             {
@@ -139,7 +139,7 @@ namespace VHSSD
 
                 name = type.Name;
 
-                if (type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>)))
+                /*if (type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>)))
                 {
                     iterate = true;
 
@@ -150,8 +150,9 @@ namespace VHSSD
                                     .FirstOrDefault();
 
                     iterateType = db.GetType(genericArgument);
-                }
-                else if (type.IsClass)
+                }*/
+                
+                if (type.IsClass)
                 {
                     this.members = new OrderedDictionary<string, Member>();
 
@@ -182,7 +183,7 @@ namespace VHSSD
                 }
             }
 
-            public byte[] ObjToByte (object obj)
+            public byte[] ObjToBytes (object obj)
             {
                 if (type.IsValueType)
                 {
@@ -207,7 +208,7 @@ namespace VHSSD
                         foreach(var member in members.Items)
                         {
                             var val = member.Value.Extract(obj);
-                            var valBytes = member.Value.type.ObjToByte(val);
+                            var valBytes = member.Value.type.ObjToBytes(val);
                             bytes.AddRange(valBytes);
                         }
                     }
@@ -361,29 +362,41 @@ namespace VHSSD
 
         #region IterableStreams
 
-        public class ListStream<T>
+        public abstract class IterateStream
         {
-            DB db;
+            internal DB db;
+            internal File file;
+
+            public bool changed = false;
+            IEnumerable iterate;
+
+            internal void InitSaveChecker()
+            {
+                //todo
+            }
+
+            public abstract void Save();
+        }
+
+        public class ListStream<T> : IterateStream
+        {
             List<T> list;
-
-            File file;
-            Type type;
+   
             Type getSetType;
-
-            public bool changed;
 
             public ListStream(DB db, string name, List<T> list)
             {
                 this.db = db;
                 this.list = list;
 
-                type = db.GetType(list.GetType());
                 getSetType = db.GetType(typeof(T));
 
                 file = new File(db.dir + "list-" + name);
 
                 if (file.Length > 0)
                     Load();
+
+                this.InitSaveChecker();
             }
 
             public void Load()
@@ -407,13 +420,79 @@ namespace VHSSD
                 }
             }
 
-            public void Save()
+            public override void Save()
             {
                 var res = new List<byte>();
 
                 foreach(T obj in list)
                 {
-                    var bytes = getSetType.ObjToByte(obj);
+                    var bytes = getSetType.ObjToBytes(obj);
+                    res.AddRange(res);
+                }
+
+                file.Write(res.ToArray());
+                file.Flush();
+            }
+        }
+
+        public class OrderedDictionaryStream<T,V> : IterateStream
+        {
+            OrderedDictionary<T, V> dict;
+
+            Type keyValueType;
+
+            struct KeyValue<TT, VV>
+            {
+                public TT Key;
+                public VV Value;
+            }
+
+            public OrderedDictionaryStream(DB db, string name, OrderedDictionary<T, V> dict)
+            {
+                this.db = db;
+                this.dict = dict;
+
+                keyValueType = db.GetType(typeof(KeyValue<T,V>));
+
+                file = new File(db.dir + "odict-" + name);
+
+                if (file.Length > 0)
+                    Load();
+            }
+
+            public void Load()
+            {
+                if (dict.Items.Count() > 0)
+                    return;
+
+                int size = keyValueType.size;
+                int numRow = (int)file.Length / size;
+
+                var data = file.Read();
+
+                int pos = 0;
+                for (long r = 0; r < numRow; r++)
+                {
+                    var rowData = data.Skip(pos).Take(size).ToArray();
+                    var kv = (KeyValue<T,V>)keyValueType.BytesToObject(rowData);
+
+                    dict.Add(kv.Key, kv.Value);
+
+                    pos += size;
+                }
+            }
+
+            public override void Save()
+            {
+                var res = new List<byte>();
+
+                foreach (var obj in dict.Items)
+                {       
+                    var kv = new KeyValue<T, V>();
+                    kv.Key = obj.Key;
+                    kv.Value = obj.Value;
+
+                    var bytes = keyValueType.ObjToBytes(kv);
                     res.AddRange(res);
                 }
 
