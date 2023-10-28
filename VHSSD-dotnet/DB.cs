@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -184,9 +185,11 @@ namespace VHSSD
 
         #region OrderedKeys
 
-        public class OrderedKeys
+        public class OrderedKeys<T>
         {
             DB db;
+
+            public OrderedDictionary<T, long> keys = new OrderedDictionary<T, long>(); 
 
             public OrderedKeys(DB db, string name)
             {
