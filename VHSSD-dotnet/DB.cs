@@ -329,19 +329,18 @@ namespace VHSSD
         public class OrderedKeys<T>
         {
             DB db;
-            Type type;
 
-            public File file;
             public string name;
 
             public OrderedDictionary<T, long> keys = new OrderedDictionary<T, long>(); 
+            public OrderedDictionaryStream<T, long> stream;
 
             public OrderedKeys(DB db, string name)
             {
                 this.db = db;
                 this.name = name;
 
-                this.type = db.GetType(typeof(T));
+                stream = new OrderedDictionaryStream<T, long>(db, name, keys);
             }
 
             public void SetKey(T key, long id)
@@ -350,11 +349,20 @@ namespace VHSSD
                     keys[key] = id;
                 else 
                     keys.Add(key, id);
+
+                stream.changed = true;
             }
 
             public long GetKey(T key)
             {
                 return keys[key];
+            }
+        }
+
+        public class OrderedLongKeys : OrderedKeys<long>
+        {
+            public OrderedLongKeys(DB db, string name, int cutBytes=-1):base(db, name) { 
+                stream.cutBytes = cutBytes;
             }
         }
 
@@ -370,6 +378,8 @@ namespace VHSSD
             public bool changed = false;
             IEnumerable iterate;
 
+            public int cutBytes = -1;
+
             internal void InitSaveChecker()
             {
                 //todo
@@ -383,6 +393,8 @@ namespace VHSSD
             List<T> list;
    
             Type getSetType;
+
+            public bool sort = false;
 
             public ListStream(DB db, string name, List<T> list)
             {
@@ -405,6 +417,8 @@ namespace VHSSD
                     return;
 
                 int size = getSetType.size;
+                if (cutBytes > 0) size -= cutBytes;
+
                 int numRow = (int)file.Length / size;
 
                 var data = file.Read();
@@ -422,12 +436,19 @@ namespace VHSSD
 
             public override void Save()
             {
+                if(sort)
+                    list.Sort();
+
                 var res = new List<byte>();
 
                 foreach(T obj in list)
                 {
                     var bytes = getSetType.ObjToBytes(obj);
-                    res.AddRange(res);
+
+                    if (cutBytes > 0)
+                        bytes = bytes.Take(bytes.Length-cutBytes).ToArray();
+                    
+                    res.AddRange(bytes);
                 }
 
                 file.Write(res.ToArray());
@@ -466,6 +487,8 @@ namespace VHSSD
                     return;
 
                 int size = keyValueType.size;
+                if (cutBytes > 0) size -= cutBytes;
+
                 int numRow = (int)file.Length / size;
 
                 var data = file.Read();
@@ -493,7 +516,11 @@ namespace VHSSD
                     kv.Value = obj.Value;
 
                     var bytes = keyValueType.ObjToBytes(kv);
-                    res.AddRange(res);
+
+                    if (cutBytes > 0)
+                        bytes = bytes.Take(bytes.Length - cutBytes).ToArray();
+
+                    res.AddRange(bytes);
                 }
 
                 file.Write(res.ToArray());
@@ -510,6 +537,8 @@ namespace VHSSD
             public string ctx = "";
             public Type type;
             public int RowSize = -1;
+
+            public List<object> keys = new List<object>();
 
             public Table(DB db, string ctx="")
             {
@@ -529,39 +558,33 @@ namespace VHSSD
 
         #region InternalStructs
 
-        [Serializable]
         struct DataIndex
         {
-            public ulong Index;
-            public ushort Size;
+            public long Index;
+            public int Size;
         }
 
-        [Serializable]
         struct Value
         {
             public byte[] Bytes;
         }
 
-        [Serializable]
         struct Keys
         {
             public Value[] OrderedKeys;
             public ulong[] OrderedRowsIndexes;
         }
 
-        [Serializable]
         struct Row
         {
             public ulong Index;
         }
 
-        [Serializable]
         struct Values
         {
             public Value[] Data;
         }
 
-        [Serializable]
         struct Table
         {
             public DataIndex[] Columns;
@@ -571,7 +594,6 @@ namespace VHSSD
 
         #region Tables
 
-        [Serializable]
         public struct FS
         {
             public ulong ID;
