@@ -66,16 +66,13 @@ namespace VHSSD
         {
             public VHFS fs;
 
-            public Int64 ID;
+            public ulong ID;
 
             public string name;
             public File parent;
             public bool isDirectory;
 
             public bool open = false;
-
-            // File
-            public Int64 length;
 
             // Directory
             public Tree<File> files;
@@ -215,8 +212,6 @@ namespace VHSSD
                 public ulong LastAccessTime;
                 public ulong LastWriteTime;
                 public ulong ChangeTime;
-
-                public uint SecurityDescriptionLen;
                 public byte[] SecurityDescription;
             }
         }
