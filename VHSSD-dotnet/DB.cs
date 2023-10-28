@@ -25,6 +25,8 @@ namespace VHSSD
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
         }
 
+        #region BytesTables 
+
         Dictionary<int, BytesTable> bytesTables = new Dictionary<int, BytesTable>();
         BytesTable GetBytesTable(int size)
         {
@@ -93,47 +95,127 @@ namespace VHSSD
             }
         }
 
+        #endregion
+
+        #region Types
+
+        Dictionary<System.Type, Type> types = new Dictionary<System.Type, Type>();
+        Type GetType(System.Type type)
+        {
+            if (!types.ContainsKey(type))
+                types.Add(type, new Type(this, type));
+
+            return types[type];
+        }
+
+        public class Type
+        {
+            DB db;
+            System.Type type;
+
+            List<string> membersOrder;
+            Dictionary<string, Member> members;
+
+            public int size = -1;
+
+            public bool hasDynamicSize = false;
+
+            public Type(DB db, System.Type type)
+            {
+                this.db = db;
+                this.type = type;
+
+                if (type.IsClass)
+                {
+                    this.membersOrder = new List<string>();
+                    this.members = new Dictionary<string, Member>();
+
+                    size = 0;
+
+                    var members = type.GetMembers();
+                    foreach (var member in members)
+                    {
+                        var m = new Member(db, member);
+                        this.members.Add(member.Name, m);
+                        this.membersOrder.Add(member.Name);
+
+                        if (m.type.hasDynamicSize)
+                            hasDynamicSize = true;
+
+                        size += m.size;
+                    }
+                }
+                else
+                {
+                    if (!type.IsArray) {
+                        if (type.IsValueType)
+                            size = Marshal.SizeOf(type);                     
+                    }
+                    else
+                    {
+                        hasDynamicSize = true;
+                    }
+                }
+            }
+
+            class Member
+            {
+                public MemberInfo info;
+                public Type type;
+
+                public int size = 0;
+
+                public Member(DB db, MemberInfo info)
+                {
+                    this.info = info;
+
+                    var type = info.DeclaringType;
+                    this.type = db.GetType(type);
+
+                    if (type.IsArray)
+                        size = db.GetType(typeof(DataIndex)).size;
+                    else
+                        size = this.type.size;
+                }
+            }
+        }
+
+        #endregion
+
+        #region OrderedKeys
+
+        public class OrderedKeys
+        {
+            DB db;
+
+            public OrderedKeys(DB db, string name)
+            {
+                this.db = db;
+            }
+        }
+
+        #endregion
+
         public class Table<T>
         {
             DB db;
 
-            List<string> membersOrder = new List<string>();
-            Dictionary<string, Member> members = new Dictionary<string, Member>();
+            public string ctx = "";
+            public Type type;
+            public int RowSize = 0;
 
-            public Table(DB db)
+            public Table(DB db, string ctx="")
             {
                 this.db = db;
+                this.ctx = ctx;
 
-                var type = typeof(T);
-
-                var members = type.GetMembers();
-                foreach(var member in members)
-                {
-                    this.members.Add(member.Name, new Member(member));
-                    this.membersOrder.Add(member.Name);
-                }
+                type = db.GetType(typeof(T));
+                RowSize = type.size;
             }
 
             public void Insert (T row)
             {
 
-            }
-
-            class Member
-            {
-                MemberInfo info;
-                int size = -1;
-
-                public Member(MemberInfo info)
-                {
-                    this.info = info;
-
-                    var type = info.DeclaringType;
-                    if (!type.IsArray)
-                    {
-                        size = Marshal.SizeOf(type);
-                    }
-                }
             }
         }
 
