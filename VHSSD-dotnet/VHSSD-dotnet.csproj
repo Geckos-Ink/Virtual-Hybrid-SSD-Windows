@@ -80,6 +80,7 @@
     <Compile Include="DB.cs" />
     <Compile Include="File.cs" />
     <Compile Include="Memory.cs" />
+    <Compile Include="MyImplementations.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="VHFS.cs" />
   </ItemGroup>

@@ -24,6 +24,11 @@ namespace VHSSD
             }
         }
 
+        public bool Has(TKey key)
+        {
+            return dictionary.ContainsKey(key);
+        }
+
         public TValue this[TKey key]
         {
             get { return dictionary[key]; }

@@ -5,6 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -43,7 +45,7 @@ namespace VHSSD
             long size;
 
             List<long> freeSlots = new List<long>();
-            bool freeSlotsChanged = false;
+            ListStream<long> freeSlotsStream;
 
             File fileValues;
             File fileFreeSlots;
@@ -52,6 +54,8 @@ namespace VHSSD
             {
                 this.db = db;
                 this.size = (long)size;
+
+                this.freeSlotsStream = new ListStream<long>(db, "bt-fs-" + size, freeSlots);
 
                 fileValues = new File(db.dir + "bt-" + size + ".bin");
                 fileFreeSlots = new File(db.dir + "bt-fs-" + size + ".bin");
@@ -70,7 +74,7 @@ namespace VHSSD
                     {
                         index = freeSlots[0];
                         freeSlots.RemoveAt(0);
-                        freeSlotsChanged = true;
+                        freeSlotsStream.changed = true;
                     }
                     else 
                         index = Length;
@@ -84,7 +88,7 @@ namespace VHSSD
             public void Delete(long index)
             {
                 freeSlots.Add(index);
-                freeSlotsChanged = true;
+                freeSlotsStream.changed = true;
             }
 
             long Length
@@ -97,6 +101,7 @@ namespace VHSSD
         }
 
         #endregion
+
 
         #region Types
 
@@ -114,31 +119,46 @@ namespace VHSSD
             DB db;
             System.Type type;
 
-            List<string> membersOrder;
-            Dictionary<string, Member> members;
+            OrderedDictionary<string, Member> members;
 
+            public string name;
             public int size = -1;
 
             public bool hasDynamicSize = false;
+
+            public bool iterate = false;
+            public Type iterateType;
 
             public Type(DB db, System.Type type)
             {
                 this.db = db;
                 this.type = type;
 
-                if (type.IsClass)
+                name = type.Name;
+
+                if (type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>)))
                 {
-                    this.membersOrder = new List<string>();
-                    this.members = new Dictionary<string, Member>();
+                    iterate = true;
+
+                    // Get generic type argument(s)
+                    System.Type genericArgument = type.GetInterfaces()
+                                    .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                                    .Select(i => i.GetGenericArguments()[0])
+                                    .FirstOrDefault();
+
+                    iterateType = db.GetType(genericArgument);
+                }
+                else if (type.IsClass)
+                {
+                    this.members = new OrderedDictionary<string, Member>();
 
                     size = 0;
 
-                    var members = type.GetMembers();
+                    var members = type.GetFields();
                     foreach (var member in members)
                     {
                         var m = new Member(db, member);
                         this.members.Add(member.Name, m);
-                        this.membersOrder.Add(member.Name);
 
                         if (m.type.hasDynamicSize)
                             hasDynamicSize = true;
@@ -159,14 +179,48 @@ namespace VHSSD
                 }
             }
 
+            public byte[] ObjToByte (object obj)
+            {
+                if (type.IsValueType)
+                {
+                    using (MemoryStream memoryStream = new MemoryStream())
+                    {
+                        IFormatter formatter = new BinaryFormatter();
+                        formatter.Serialize(memoryStream, obj);
+                        return memoryStream.ToArray();
+                    }
+                }
+                else
+                {
+                    if (type.IsArray)
+                    {
+                        //todo
+                        throw new NotSupportedException();
+                    }
+                    else
+                    {
+                        List<byte> bytes = new List<byte>();        
+
+                        foreach(var member in members.Items)
+                        {
+                            var val = member.Value.Extract(obj);
+                            var valBytes = member.Value.type.ObjToByte(val);
+                            bytes.AddRange(valBytes);
+                        }
+                    }
+                }
+
+                return null;
+            }
+
             class Member
             {
-                public MemberInfo info;
+                public FieldInfo info;
                 public Type type;
 
                 public int size = 0;
 
-                public Member(DB db, MemberInfo info)
+                public Member(DB db, FieldInfo info)
                 {
                     this.info = info;
 
@@ -178,22 +232,95 @@ namespace VHSSD
                     else
                         size = this.type.size;
                 }
+
+                public object Extract(object obj)
+                {
+                    return info.GetValue(obj);
+                }
             }
         }
 
         #endregion
+
 
         #region OrderedKeys
 
         public class OrderedKeys<T>
         {
             DB db;
+            Type type;
+
+            public File file;
+            public string name;
 
             public OrderedDictionary<T, long> keys = new OrderedDictionary<T, long>(); 
 
             public OrderedKeys(DB db, string name)
             {
                 this.db = db;
+                this.name = name;
+
+                this.type = db.GetType(typeof(T));
+            }
+
+            public void SetKey(T key, long id)
+            {
+                if (keys.Has(key))
+                    keys[key] = id;
+                else 
+                    keys.Add(key, id);
+            }
+
+            public long GetKey(T key)
+            {
+                return keys[key];
+            }
+        }
+
+        #endregion
+
+        #region IterableStreams
+
+        public class ListStream<T>
+        {
+            DB db;
+            List<T> list;
+
+            File file;
+            Type type;
+            Type getSetType;
+
+            public bool changed;
+
+            public ListStream(DB db, string name, List<T> list)
+            {
+                this.db = db;
+                this.list = list;
+
+                type = db.GetType(list.GetType());
+                getSetType = db.GetType(typeof(T));
+
+                file = new File(db.dir + "list-" + name);
+
+                if (file.Length > 0)
+                    Load();
+            }
+
+            public void Load()
+            {
+                int size = getSetType.size;
+                int numRow = (int)file.Length / size;
+
+                var data = file.Read();
+
+                int pos = 0;
+                for(long r = 0; r < numRow; r++)
+                {
+                    var rowData = data.Skip(pos).Take(size).ToArray();
+
+
+                    pos += size;              
+                }
             }
         }
 
@@ -205,7 +332,7 @@ namespace VHSSD
 
             public string ctx = "";
             public Type type;
-            public int RowSize = 0;
+            public int RowSize = -1;
 
             public Table(DB db, string ctx="")
             {
@@ -213,6 +340,7 @@ namespace VHSSD
                 this.ctx = ctx;
 
                 type = db.GetType(typeof(T));
+
                 RowSize = type.size;
             }
 
