@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -24,26 +25,80 @@ namespace VHSSD
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
         }
 
-        void InsertBytes(byte[] bytes)
+        Dictionary<int, BytesTable> bytesTables = new Dictionary<int, BytesTable>();
+        BytesTable GetBytesTable(int size)
         {
+            if(!bytesTables.ContainsKey(size))
+                bytesTables.Add(size, new BytesTable(this, size));
 
+            return bytesTables[size];
         }
 
         class BytesTable
         {
             DB db;
+            long size;
+
+            List<long> freeSlots = new List<long>();
+            bool freeSlotsChanged = false;
+
+            File fileValues;
+            File fileFreeSlots;
 
             public BytesTable(DB db, int size)
             {
                 this.db = db;
+                this.size = (long)size;
+
+                fileValues = new File(db.dir + "bt-" + size + ".bin");
+                fileFreeSlots = new File(db.dir + "bt-fs-" + size + ".bin");
+            }
+
+            public byte[] Get(long index)
+            {
+                return fileValues.Read(size, size * index);
+            }
+
+            public long Set(byte[] value, long index = -1)
+            {
+                if (index == -1)
+                {
+                    if(freeSlots.Count > 0)
+                    {
+                        index = freeSlots[0];
+                        freeSlots.RemoveAt(0);
+                        freeSlotsChanged = true;
+                    }
+                    else 
+                        index = Length;
+                }
+
+                fileValues.Write(value, index * size);
+
+                return index;
+            }
+
+            public void Delete(long index)
+            {
+                freeSlots.Add(index);
+                freeSlotsChanged = true;
+            }
+
+            long Length
+            {
+                get
+                {
+                    return fileValues.Length / size;
+                }
             }
         }
 
-        class Table<T>
+        public class Table<T>
         {
             DB db;
 
-            Dictionary<string, MemberInfo> members = new Dictionary<string, MemberInfo>();
+            List<string> membersOrder = new List<string>();
+            Dictionary<string, Member> members = new Dictionary<string, Member>();
 
             public Table(DB db)
             {
@@ -54,13 +109,31 @@ namespace VHSSD
                 var members = type.GetMembers();
                 foreach(var member in members)
                 {
-                    this.members.Add(member.Name, member);
+                    this.members.Add(member.Name, new Member(member));
+                    this.membersOrder.Add(member.Name);
                 }
             }
 
             public void Insert (T row)
             {
 
+            }
+
+            class Member
+            {
+                MemberInfo info;
+                int size = -1;
+
+                public Member(MemberInfo info)
+                {
+                    this.info = info;
+
+                    var type = info.DeclaringType;
+                    if (!type.IsArray)
+                    {
+                        size = Marshal.SizeOf(type);
+                    }
+                }
             }
         }
 
