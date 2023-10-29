@@ -131,8 +131,9 @@ namespace VHSSD
 
             #region LazyLoadSave
 
-            bool loaded = false;
+            DB.FS lastFS;
 
+            bool loaded = false;
             void Load(bool lazy=false)
             {
                 if (loaded) return;
@@ -167,6 +168,7 @@ namespace VHSSD
                 if(!lazy)
                     LoadFiles();
 
+                lastFS = fs;
                 loaded = true;
             }
 
@@ -188,6 +190,8 @@ namespace VHSSD
                 loadedFiles = true;
             }
 
+            long lastSave = 0;
+            bool changes = false;
             void Save()
             {
                 var fs = new FS();
@@ -207,7 +211,13 @@ namespace VHSSD
                 fs.FileSize = attributes.FileSize;
                 fs.SecurityDescription = attributes.SecurityDescription;
 
-                this.vhfs.TableFS.Insert(fs, "Parent,ID");
+                var tFS = vhfs.DB.GetType(typeof(DB.FS));
+                if (!tFS.CompareObjs(fs, lastFS))
+                {
+                    this.vhfs.TableFS.Set(fs, "Parent,ID");
+                    lastFS = fs;
+                    lastSave = Static.UnixTime;
+                }
             }
 
             #endregion
@@ -216,12 +226,18 @@ namespace VHSSD
 
             public void AddFile(File file)
             {
+                LoadFiles();
+
                 file.parent = this;
                 files.Set(file.name, file);
+
+                changes = true;
             }
 
             public File GetFile(string name)
             {
+                LoadFiles();
+
                 if (String.IsNullOrEmpty(name))
                     return this;
 
@@ -230,6 +246,8 @@ namespace VHSSD
 
             public List<string> ListFiles()
             {
+                LoadFiles();
+
                 return files?.keys;
             }
 
@@ -240,7 +258,11 @@ namespace VHSSD
 
             public void Remove(string name)
             {
+                LoadFiles();
+
                 files.Unset(name);
+
+                changes = true;
             }
 
             #endregion
@@ -298,7 +320,7 @@ namespace VHSSD
 
             public void Dispose()
             {
-                //todo
+                Save();
             }
 
             public Fsp.Interop.FileInfo GetFileInfo()

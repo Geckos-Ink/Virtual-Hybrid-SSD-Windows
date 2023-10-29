@@ -6,6 +6,17 @@ using System.Threading.Tasks;
 
 namespace VHSSD
 {
+    public static class Static
+    {
+        public static long UnixTime
+        {
+            get
+            {
+                return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            }
+        }
+    }
+
     public class OrderedDictionary<TKey, TValue>
     {
         private Dictionary<TKey, TValue> dictionary = new Dictionary<TKey, TValue>();

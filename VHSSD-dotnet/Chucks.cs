@@ -19,7 +19,7 @@ namespace VHSSD
         {
             Chucks chucks;
 
-            public Chuck(Chucks chucks)
+            public Chuck(Chucks chucks, long id, long part)
             {
                 this.chucks = chucks;
             }

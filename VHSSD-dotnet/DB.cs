@@ -112,7 +112,7 @@ namespace VHSSD
         #region Types
 
         Dictionary<System.Type, Type> types = new Dictionary<System.Type, Type>();
-        Type GetType(System.Type type)
+        public Type GetType(System.Type type)
         {
             if (!types.ContainsKey(type))
                 types.Add(type, new Type(this, type));
@@ -188,6 +188,20 @@ namespace VHSSD
                         hasDynamicSize = true;
                     }
                 }
+            }
+
+            public bool CompareObjs(object obj1, object obj2)
+            {
+                foreach(var member in this.members.Items)
+                {
+                    var m1 = member.Value.Extract(obj1);
+                    var m2 = member.Value.Extract(obj2);
+
+                    if(m1 != m2) 
+                        return false;
+                }
+
+                return true;
             }
 
             public byte[] ObjToBytes (object obj)
@@ -426,7 +440,7 @@ namespace VHSSD
                 get { return changed; }
 
                 set {
-                    lastChange = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    lastChange = Static.UnixTime;
                     changed = value; 
                 }
             }
@@ -610,8 +624,12 @@ namespace VHSSD
 
                 RowSize = type.size;
                 bytesTable = db.GetBytesTable(RowSize);
+            }
 
-                SetKey(type.firstMember.info.Name);
+            public void CheckKey()
+            {
+                if (Keys.Count == 0)
+                    SetKey(type.firstMember.info.Name);
             }
 
             public void Close()
@@ -842,19 +860,25 @@ namespace VHSSD
 
             #endregion
 
-            public void Insert (T row, string relation=null, long index = -1)
+            public long Set (T row, string relation=null, long index = -1)
             {
-                if(index == -1) index = GetIndex(row, relation);
+                CheckKey();
+
+                if (index == -1) index = GetIndex(row, relation);
 
                 var bytes = type.ObjToBytes(row);
                 index = bytesTable.Set(bytes, index);
 
                 foreach(var key in Keys)
                     key.Set(row, index);
+
+                return index;
             }
 
             public long GetIndex (T row, string relation=null)
             {
+                CheckKey();
+
                 if (relation == null) relation = Keys[0].name;
                 relation = relation.Replace(" ", "");
 
@@ -896,10 +920,10 @@ namespace VHSSD
 
             public void Delete(T row, string relation = null, long index=-1)
             {
-                if(index == -1)
+                if (index == -1)
                     index = GetIndex(row, relation);
 
-                Delete(index);
+                bytesTable.Delete(index);
 
                 foreach (var key in Keys)
                     key.Delete(row);
