@@ -538,14 +538,25 @@ namespace VHSSD
 
             public List<Key> Keys = new List<Key>();
 
+            BytesTable bytesTable;
+
             public Table(DB db, string ctx="")
             {
                 this.db = db;
-                this.ctx = ctx;
+                this.ctx = type.name + (String.IsNullOrEmpty(ctx) ? "" : "-" + ctx);
 
                 type = db.GetType(typeof(T));
 
                 RowSize = type.size;
+                bytesTable = db.GetBytesTable(RowSize);
+            }
+
+            public void Close()
+            {
+                foreach (var key in Keys)
+                {
+                    key.Close();
+                }
             }
 
             #region SetKeys
@@ -557,6 +568,7 @@ namespace VHSSD
                 if (key3 != null) keys.Add(key3);
 
                 var manager = new Key(this, keys.ToArray());
+                Keys.Add(manager);
             }
 
             public class Key
@@ -564,6 +576,7 @@ namespace VHSSD
                 public string[] Relation;
                 public OrderedKeys<long> Keys;
 
+                public string name;
                 public string prefix;
                 Table<T> table;
 
@@ -573,8 +586,16 @@ namespace VHSSD
 
                     Relation = relation;
 
+                    name = string.Join(",", relation);
+                    
                     prefix = table.ctx + "-" + string.Join("-", relation);
                     Keys = new OrderedKeys<long>(table.db, prefix);
+                }
+
+                public void Close()
+                {
+                    Keys.stream.Save();
+                    CloseOKs(true);
                 }
 
                 #region OpenedKeyManager
@@ -697,7 +718,42 @@ namespace VHSSD
 
             public void Insert (T row)
             {
+                var bytes = type.ObjToBytes(row);
+                var index = bytesTable.Set(bytes);
 
+                foreach(var key in Keys)
+                    key.Set(row, index);
+            }
+
+            public long GetIndex (T row, string relation=null)
+            {
+                if (relation == null) relation = Keys[0].name;
+                relation = relation.Replace(" ", "");
+
+                long index = -1;
+                foreach(var key in Keys)
+                {
+                    if(key.name == relation)
+                    {
+                        index = key.Get(row);
+                        break;
+                    } 
+                }
+
+                return index;
+            }
+
+            public T Get(long index)
+            {
+                var bytes = bytesTable.Get(index);
+                var res = (T)type.BytesToObject(bytes);
+                return res;
+            }
+
+            public T Get(T row, string relation = null)
+            {
+                var index = GetIndex(row, relation);
+                return Get(index);
             }
         }
 
@@ -707,32 +763,6 @@ namespace VHSSD
         {
             public long Index;
             public int Size;
-        }
-
-        struct Value
-        {
-            public byte[] Bytes;
-        }
-
-        struct Keys
-        {
-            public Value[] OrderedKeys;
-            public ulong[] OrderedRowsIndexes;
-        }
-
-        struct Row
-        {
-            public ulong Index;
-        }
-
-        struct Values
-        {
-            public Value[] Data;
-        }
-
-        struct Table
-        {
-            public DataIndex[] Columns;
         }
 
         #endregion
