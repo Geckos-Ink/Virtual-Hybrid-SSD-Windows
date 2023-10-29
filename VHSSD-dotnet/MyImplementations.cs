@@ -29,6 +29,13 @@ namespace VHSSD
             return dictionary.ContainsKey(key);
         }
 
+        public void Remove(TKey key)
+        {
+            var kv = new KeyValuePair<TKey, TValue>(key, dictionary[key]);
+            dictionary.Remove(key);
+            insertionOrder.Remove(kv);
+        }
+
         public KeyValuePair<TKey, TValue> Last()
         {
             return insertionOrder.Last();

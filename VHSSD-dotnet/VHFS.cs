@@ -17,9 +17,14 @@ namespace VHSSD
     public class VHFS
     {
         public File root;
+        public long MaxID = 0;
+
+        public DB DB;
 
         public VHFS() {
-            root = new File(true);
+            DB = new DB(this);
+
+            root = new File(true, 0, this);
         }
 
         public File GetFile(string path)
@@ -40,6 +45,8 @@ namespace VHSSD
 
         public void AddFile(File file, string path)
         {
+            file.SetFS(this);
+
             var dirs = path.Substring(1).Split('\\');
             file.name = dirs[dirs.Length - 1];
 
@@ -66,7 +73,7 @@ namespace VHSSD
         {
             public VHFS fs;
 
-            public ulong ID;
+            public long ID;
 
             public string name;
             public File parent;
@@ -80,8 +87,11 @@ namespace VHSSD
             // Attributes
             public Attributes attributes;
 
-            public File(bool isDirectory)
+            public File(bool isDirectory, long id=-1, VHFS vhfs=null)
             {
+                this.ID = id;
+                SetFS(vhfs);
+
                 this.isDirectory = isDirectory;
 
                 if (isDirectory)
@@ -91,6 +101,30 @@ namespace VHSSD
                     attributes.FileAttributes = (uint)FileAttributes.Directory;
                 }
             }
+
+            public void SetFS(VHFS vhfs)
+            {
+                if (fs != null || vhfs == null)
+                    return;
+
+                fs = vhfs;
+
+                if (this.ID == -1)
+                    this.ID = ++fs.MaxID;
+            }
+
+            #region LazyLoadSave
+
+            bool loaded = false;
+
+            void Load()
+            {
+                if (loaded) return;
+
+
+            }
+
+            #endregion
 
             #region Directory
 

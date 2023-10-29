@@ -71,6 +71,9 @@ namespace VHSSD
 
             public long Set(byte[] value, long index = -1)
             {
+                if (value.Length != size)
+                    throw new ArgumentException("bytes size dismatch with the BytesTable size");
+
                 if (index == -1)
                 {
                     if(freeSlots.Count > 0)
@@ -384,6 +387,11 @@ namespace VHSSD
                 return keys[key];
             }
 
+            public void Delete(T key)
+            {
+                keys.Remove(key);
+            }
+
             public bool Has(T key)
             {
                 return keys.Has(key);
@@ -649,12 +657,16 @@ namespace VHSSD
                     }
                     else
                     {
+                        const int maxOpen = 16;
+
+                        if (openOKs.Count <= maxOpen) return;
+
                         var ordered = new OrderedDictionary<long, OrderedKeys<long>>();
                         foreach(var ok in openOKs)
                             ordered.Add(ok.Value.stream.lastChange, ok.Value);
 
                         int i = 0;
-                        while(openOKs.Count < 16 && i < ordered.Items.Count())
+                        while(openOKs.Count > maxOpen && i < ordered.Items.Count())
                         {
                             var ok = ordered[i];
                             ok.stream.Save();
@@ -737,6 +749,35 @@ namespace VHSSD
 
                     return nextKeys;
                 }
+
+                public void Delete (T row)
+                {
+                    var keysStack = new List<OrderedKeys<long>>() { Keys };
+
+                    long nextKeys = 0;
+
+                    for (int r = 0; r < Relation.Length; r++)
+                    {
+                        var path = string.Join("-", Relation.Take(r + 1).ToArray());
+
+                        if (keysStack.Count <= r)
+                        {
+                            var nk = GetOK(prefix + "-" + path + "-" + nextKeys.ToString("X"));
+                            keysStack.Add(nk);
+                        }
+
+                        var keys = keysStack[r];
+
+                        var rel = Relation[r];
+                        var val = (long)table.type.members[rel].Extract(row);
+
+                        if (keys.Has(val))
+                        {
+                            nextKeys = keys.Get(val);
+                            keys.Delete(val);
+                        }
+                    }
+                }
             }
 
             #endregion
@@ -779,6 +820,35 @@ namespace VHSSD
             {
                 var index = GetIndex(row, relation);
                 return Get(index);
+            }
+
+            public void Update(T row, string relation = null)
+            {
+                var index = GetIndex(row, relation);
+                var bytes = type.ObjToBytes(row);
+                bytesTable.Set(bytes, index);
+
+                // Update keys
+                //todo: check if key are changed
+                foreach (var key in Keys)
+                    key.Set(row, index);
+            }
+
+            public void Delete(long index)
+            {
+                var row = Get(index);
+                Delete(row, null, index);
+            }
+
+            public void Delete(T row, string relation = null, long index=-1)
+            {
+                if(index == -1)
+                    index = GetIndex(row, relation);
+
+                Delete(index);
+
+                foreach (var key in Keys)
+                    key.Delete(row);
             }
         }
 
