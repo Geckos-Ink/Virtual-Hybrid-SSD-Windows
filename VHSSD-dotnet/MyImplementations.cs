@@ -37,12 +37,19 @@ namespace VHSSD
         private Dictionary<TKey, TValue> dictionary = new Dictionary<TKey, TValue>();
         private List<KeyValuePair<TKey, TValue>> insertionOrder = new List<KeyValuePair<TKey, TValue>>();
 
+        public void Clear()
+        {
+            dictionary.Clear();
+            insertionOrder.Clear();
+        }
+
         public void Add(TKey key, TValue value)
         {
             if (!dictionary.ContainsKey(key))
             {
                 dictionary.Add(key, value);
                 insertionOrder.Add(new KeyValuePair<TKey, TValue>(key, value));
+                insertionOrder = insertionOrder.OrderBy(x => x.Key).ToList();
             }
             else
             {
@@ -67,6 +74,33 @@ namespace VHSSD
             return insertionOrder.Last();
         }
 
+        public int IndexOf(TKey key)
+        {
+            // Improve the algorithm
+            int precision = insertionOrder.Count / 2;
+            int pos = precision;
+
+            int compare = 0;
+            while (true)
+            {
+                precision /= 2;
+                if (precision <= 1)
+                    precision = 1;
+
+
+                compare = Comparer<TKey>.Default.Compare(insertionOrder[pos].Key, key);
+
+                if (compare == 0)
+                    return pos;
+                
+                pos -= precision * compare;
+
+                if (pos < 0 || pos > insertionOrder.Count) break;
+            }
+
+            return -1;
+        }
+
         public TValue this[TKey key]
         {
             get { return dictionary[key]; }
@@ -75,14 +109,7 @@ namespace VHSSD
                 if (dictionary.ContainsKey(key))
                 {
                     dictionary[key] = value;
-                    for (int i = 0; i < insertionOrder.Count; i++)
-                    {
-                        if (EqualityComparer<TKey>.Default.Equals(insertionOrder[i].Key, key))
-                        {
-                            insertionOrder[i] = new KeyValuePair<TKey, TValue>(key, value);
-                            break;
-                        }
-                    }
+                    insertionOrder[IndexOf(key)] = new KeyValuePair<TKey, TValue>(key, value);
                 }
                 else
                 {

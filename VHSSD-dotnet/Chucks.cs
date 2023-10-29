@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace VHSSD
@@ -14,12 +15,22 @@ namespace VHSSD
 
         Dictionary<long, Dictionary<long, Chuck>> chucks = new Dictionary<long, Dictionary<long, Chuck>>();
 
+        Timer timerDispose;
+
         public Chucks(VHFS vhfs)
         {
             this.vhfs = vhfs;
 
             tableChuck = vhfs.DB.GetTable<DB.Chuck>();
             tableChuck.SetKey("ID", "Part");
+
+            timerDispose = new Timer(TimerDispose, null, 0, 1000);
+        }
+
+        OrderedDictionary<long, Chuck> chucksTemperature = new OrderedDictionary<long, Chuck>();
+        public void TimerDispose(object state)
+        {
+            chucksTemperature.Clear();
         }
 
         public struct Part
@@ -60,7 +71,22 @@ namespace VHSSD
 
         public Chuck GetChuck(long id, long part)
         {
-            return null;
+            Dictionary<long, Chuck> idChucks;
+
+            if(!chucks.TryGetValue(id, out idChucks))
+            {
+                idChucks = new Dictionary<long, Chuck>();
+                chucks[id] = idChucks;
+            }
+
+            Chuck chuck;
+            if(!idChucks.TryGetValue(part, out chuck))
+            {
+                chuck = new Chuck(this, id, part);
+                idChucks[part] = chuck;
+            }
+
+            return chuck;
         }
 
         #region Stats
