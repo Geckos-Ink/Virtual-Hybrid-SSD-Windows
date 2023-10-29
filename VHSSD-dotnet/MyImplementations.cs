@@ -10,11 +10,19 @@ namespace VHSSD
 {
     public static class Static
     {
-        public static long UnixTime
+        public static long UnixTimeMS
         {
             get
             {
                 return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            }
+        }
+
+        public static long UnixTime
+        {
+            get
+            {
+                return DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             }
         }
 

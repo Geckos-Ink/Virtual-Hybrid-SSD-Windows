@@ -19,6 +19,9 @@ namespace VHSSD
     {
         public string Name = "drive";
 
+        public long chuckSize = 1024 * 1024; // 1 MB
+        public Chucks chucks;
+
         public File root;
         public long MaxID = 0;
 
@@ -32,23 +35,84 @@ namespace VHSSD
         public VHFS() {
             DB = new DB(this);
 
+            chucks = new Chucks(this);
+
             TableFS = DB.GetTable<DB.FS>();
             TableFS.SetKey("Parent", "ID");
 
             root = new File(true, 0, this);
         }
 
+        #region Drives 
+
         public Drive AddDrive(string letter, bool ssd)
         {
             var drive = new Drive(this, letter, ssd);
 
             if (ssd)
+            {
+                drive.id = (short)SSDDrives.Count;
                 SSDDrives.Add(drive);
+            }
             else
+            {
+                drive.id = (short)HDDDrives.Count;
                 HDDDrives.Add(drive);
+            }
 
             return drive;
         }
+
+        int ssdTick = 0;
+        int hddTick = 0;
+        public Drive GetRandomDrive(bool ssd)
+        {
+            List<Drive> list = ssd ? SSDDrives : HDDDrives;
+            var tick = ssd ? ssdTick++ : hddTick++;
+
+            if (ssdTick >= int.MaxValue) ssdTick = 0;
+            if (hddTick >= int.MaxValue) hddTick = 0;
+
+            return list[tick % list.Count];
+        }
+
+        public class Drive
+        {
+            public VHFS vhfs;
+
+            public short id;
+            public string letter;
+            public bool ssd;
+
+            public DriveInfo info;
+
+            public string Dir;
+
+            public Drive(VHFS vhfs, string letter, bool ssd)
+            {
+                this.vhfs = vhfs;
+
+                this.letter = letter;
+                this.ssd = ssd;
+
+                info = new DriveInfo(letter + ":\\");
+
+                Dir = letter + ":\\vhssd";
+                Static.CreateDirIfNotExists(Dir);
+
+                Dir += "\\" + vhfs.Name + "\\";
+                Static.CreateDirIfNotExists(Dir);
+            }
+
+            public double FreeSpace()
+            {
+                return (double)info.TotalFreeSpace / (double)info.TotalSize;
+            }
+        }
+
+        #endregion
+
+        #region GenericFS
 
         public File GetFile(string path)
         {
@@ -92,33 +156,7 @@ namespace VHSSD
             AddFile(file, newFileName);
         }
 
-        public class Drive
-        {
-            public VHFS vhfs;
-
-            public string letter;
-            public bool ssd;
-
-            public DriveInfo info;
-
-            public string Dir;
-
-            public Drive(VHFS vhfs, string letter, bool ssd)
-            {
-                this.vhfs = vhfs;
-
-                this.letter = letter;
-                this.ssd = ssd;
-
-                info = new DriveInfo(letter + ":\\");
-
-                Dir = letter + ":\\vhssd";
-                Static.CreateDirIfNotExists(Dir);
-
-                Dir += "\\" + vhfs.Name;
-                Static.CreateDirIfNotExists(Dir);
-            }
-        }
+        #endregion
 
         public class File
         {
@@ -261,7 +299,7 @@ namespace VHSSD
                 {
                     this.vhfs.TableFS.Set(fs, "Parent,ID");
                     lastFS = fs;
-                    lastSave = Static.UnixTime;
+                    lastSave = Static.UnixTimeMS;
                 }
             }
 

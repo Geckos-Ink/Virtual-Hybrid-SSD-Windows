@@ -440,7 +440,7 @@ namespace VHSSD
                 get { return changed; }
 
                 set {
-                    lastChange = Static.UnixTime;
+                    lastChange = Static.UnixTimeMS;
                     changed = value; 
                 }
             }
@@ -970,13 +970,13 @@ namespace VHSSD
             public long Part;
 
             public short SSD_ID;
-            public ushort SSD_Version;
+            public ushort SSD_Version = 0;
 
             public short HDD_ID;
-            public ushort HDD_Version;
+            public ushort HDD_Version = 0;
 
-            public double Temperature;
-            public long LastAccess;
+            public long Temperature = 0;
+            public long LastAccess = 0;
         }
 
         #endregion

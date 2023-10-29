@@ -30,7 +30,7 @@ namespace VHSSD
             // Convert the string to bytes and write at the specified position
             stream.Write(data, 0, data.Length);
 
-            if (resize) stream.SetLength(stream.Position);
+            if (resize) this.Length = stream.Position;
         }
 
         public byte[] Read(long len = 0, long pos = 0)
@@ -48,7 +48,14 @@ namespace VHSSD
             return buffer;
         }
 
-        public long Length { get { return stream.Length; } }
+        public long Length {
+            get { return stream.Length; } 
+        
+            set
+            {
+                stream.SetLength(value);
+            }
+        }
 
         public void Flush()
         {
