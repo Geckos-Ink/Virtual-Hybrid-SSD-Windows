@@ -30,11 +30,14 @@ namespace VHSSD
 
         Random rand = new Random();
         OrderedDictionary<long, Chuck> chucksTemperature = new OrderedDictionary<long, Chuck>();
+        OrderedDictionary<long, Chuck> chucksUsage = new OrderedDictionary<long, Chuck>();
+
         public void TimerDispose(object state)
         {
             chucksTemperature.Clear();
+            chucksUsage.Clear();
 
-            foreach(var idChucks in chucks)
+            foreach (var idChucks in chucks)
             {
                 foreach(var chuck in idChucks.Value)
                 {
@@ -49,6 +52,8 @@ namespace VHSSD
                     }
 
                     chucksTemperature.Add(temp, chuck.Value);
+
+                    chucksUsage.Add(chuck.Value.LastUsage, chuck.Value);
                 }
             }
         }
