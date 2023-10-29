@@ -76,29 +76,58 @@ namespace VHSSD
 
         public int IndexOf(TKey key)
         {
+            var pos = InsertAt(key);
+
+            int compare = Comparer<TKey>.Default.Compare(insertionOrder[pos].Key, key);
+
+            if (compare == 0)
+                return pos;
+
+            return -1;
+        }
+
+        public int InsertAt(TKey key)
+        {
             // Improve the algorithm
             int precision = insertionOrder.Count / 2;
             int pos = precision;
 
             int compare = 0;
+            int comparePP = 0;
             while (true)
             {
-                precision /= 2;
                 if (precision <= 1)
+                {
                     precision = 1;
-
+                    comparePP = compare;
+                }
 
                 compare = Comparer<TKey>.Default.Compare(insertionOrder[pos].Key, key);
 
-                if (compare == 0)
+                bool over = comparePP != 0 && comparePP != compare;
+                if (over && compare == 1) pos--;
+
+                if (compare == 0 || over)
                     return pos;
-                
+
                 pos -= precision * compare;
 
-                if (pos < 0 || pos > insertionOrder.Count) break;
+                if (pos < 0)
+                {
+                    pos = 0;
+                    if (comparePP == 0) break;
+                }
+                else if (pos >= insertionOrder.Count)
+                {
+                    pos = insertionOrder.Count - 1;
+                    if (comparePP == 0) break;
+                }
+
+
+                precision /= 2;
             }
 
-            return -1;
+            return pos;
         }
 
         public TValue this[TKey key]
