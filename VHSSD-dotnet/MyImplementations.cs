@@ -48,8 +48,8 @@ namespace VHSSD
             if (!dictionary.ContainsKey(key))
             {
                 dictionary.Add(key, value);
-                insertionOrder.Add(new KeyValuePair<TKey, TValue>(key, value));
-                insertionOrder = insertionOrder.OrderBy(x => x.Key).ToList();
+                insertionOrder.Insert(InsertAt(key), new KeyValuePair<TKey, TValue>(key, value));
+                
             }
             else
             {
@@ -77,6 +77,8 @@ namespace VHSSD
         public int IndexOf(TKey key)
         {
             var pos = InsertAt(key);
+
+            if (pos == insertionOrder.Count) return -1;
 
             int compare = Comparer<TKey>.Default.Compare(insertionOrder[pos].Key, key);
 
@@ -119,7 +121,7 @@ namespace VHSSD
                 }
                 else if (pos >= insertionOrder.Count)
                 {
-                    pos = insertionOrder.Count - 1;
+                    pos = insertionOrder.Count;
                     if (comparePP == 0) break;
                 }
 
