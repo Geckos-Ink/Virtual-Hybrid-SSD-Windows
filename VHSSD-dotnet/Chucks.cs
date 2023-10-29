@@ -115,7 +115,7 @@ namespace VHSSD
             get { return AvgBytesRead + AvgBytesRead; }
         }
 
-        #region
+        #endregion
 
         public byte[] Read(long ID, long pos, long length)
         {

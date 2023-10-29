@@ -969,11 +969,11 @@ namespace VHSSD
             public long ID;
             public long Part;
 
-            public short SSD_ID;
-            public ushort SSD_Version = 0;
+            public short SSD_ID = -1;
+            public short SSD_Version = -1;
 
-            public short HDD_ID;
-            public ushort HDD_Version = 0;
+            public short HDD_ID = -1;
+            public short HDD_Version = -1;
 
             public long Temperature = 0;
             public long LastAccess = 0;

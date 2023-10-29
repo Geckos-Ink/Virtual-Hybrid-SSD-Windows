@@ -352,32 +352,23 @@ namespace VHSSD
 
             #region File
 
-            // Temporary ram-disk solution
-            public byte[] bytes = new byte[0];
-
             public void Read(IntPtr Buffer, UInt64 Offset, UInt32 Length,  out UInt32 PBytesTransferred)
             {
-                Byte[] Bytes = new byte[Length];
-                Array.Copy(bytes, (int)Offset, Bytes, 0, Length);
+                var bytes = vhfs.chucks.Read(ID, (long)Offset, Length);
+                Marshal.Copy(bytes, 0, Buffer, bytes.Length);
                 PBytesTransferred = Length;
-                Marshal.Copy(Bytes, 0, Buffer, Bytes.Length);
             }
 
             public void Write(IntPtr Buffer,  UInt64 Offset, UInt32 Length, Boolean WriteToEndOfFile, Boolean ConstrainedIo, out UInt32 PBytesTransferred, out Fsp.Interop.FileInfo FileInfo)
             {
                 Byte[] Bytes = new byte[Length];
                 Marshal.Copy(Buffer, Bytes, 0, Bytes.Length);
-                
-                if(attributes.FileSize < Offset + Length)
+               
+                vhfs.chucks.Write(ID, (long)Offset, Bytes);
+
+                if (WriteToEndOfFile || attributes.FileSize < Offset + Length)
                 {
                     SetSize(Offset + Length);
-                }
-
-                Array.Copy(Bytes, 0, bytes, (int)Offset, Length);
-
-                if (WriteToEndOfFile)
-                {
-                    bytes = bytes.Skip((int)(Offset+Length)).ToArray();
                 }
 
                 PBytesTransferred = (UInt32)Bytes.Length;
@@ -387,10 +378,7 @@ namespace VHSSD
 
             public void SetSize(UInt64 NewSize, Boolean SetAllocationSize = false)
             {
-                var largerBytes = new byte[NewSize];
-                Array.Copy(bytes, largerBytes, bytes.Length);
-                bytes = largerBytes;
-
+                vhfs.chucks.Resize(ID, (long)attributes.FileSize, (long)NewSize);
                 attributes.FileSize = NewSize;
             }
 
