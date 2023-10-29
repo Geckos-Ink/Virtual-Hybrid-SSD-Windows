@@ -396,6 +396,11 @@ namespace VHSSD
             {
                 return keys.Has(key);
             }
+
+            public void Die()
+            {
+                stream.file.Delete();
+            }
         }
 
         #endregion
@@ -656,7 +661,7 @@ namespace VHSSD
                     if(!openOKs.TryGetValue(name, out res))
                     {
                         res = new OrderedKeys<long>(table.db, name);
-                        openOKs[name] = res;
+                        openOKs[res.name] = res;
                     }
 
                     return res;
@@ -769,6 +774,7 @@ namespace VHSSD
                 public void Delete (T row)
                 {
                     var keysStack = new List<OrderedKeys<long>>() { Keys };
+                    var keysAssoc = new List<long>();
 
                     long nextKeys = 0;
 
@@ -790,8 +796,31 @@ namespace VHSSD
                         if (keys.Has(val))
                         {
                             nextKeys = keys.Get(val);
-                            keys.Delete(val);
+                            keysAssoc.Add(nextKeys);
                         }
+                        else
+                            throw new Exception("Unexcepted missing of key");
+
+                    }
+
+                    bool prevDied = true;
+                    for(int r = Relation.Length - 1; r >= 0; r--)
+                    {
+                        var keys = keysStack[r];
+                        if (prevDied)
+                        {
+                            keys.Delete(keysAssoc[r]);
+                        }
+
+                        if (keys.keys.Items.Count() == 0 && r > 0)
+                        {
+                            keys.Die();
+                            openOKs.Remove(keys.name);
+                            
+                            prevDied = true;
+                        }
+                        else
+                            prevDied = false;
                     }
                 }
             }
@@ -882,8 +911,8 @@ namespace VHSSD
 
         public struct FS
         {
-            public ulong ID;
-            public ulong Parent;
+            public long ID;
+            public long Parent;
 
             public bool IsDirectory;
 

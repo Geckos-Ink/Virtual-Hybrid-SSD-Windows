@@ -125,6 +125,9 @@ namespace VHSSD
             {
                 if (loaded) return;
 
+                var fs = new FS();
+                fs.ID = ID;
+                fs.Parent = parent == null ? -1 : parent.ID;
 
             }
 
