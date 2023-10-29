@@ -561,6 +561,22 @@ namespace VHSSD
 
         #endregion
 
+        public Dictionary<string, object> tables = new Dictionary<string, object>();
+        public Table<T> GetTable<T>(string ctx = "")
+        {
+            var t = GetType(typeof(T));
+            var name = t.name + (String.IsNullOrEmpty(ctx) ? "" : "-" + ctx);
+
+            object table;
+            if(!tables.TryGetValue(name, out table))
+            {
+                table = new Table<T>(this, name);
+                tables.Add(name, table);
+            }
+
+            return table as Table<T>;
+        }
+
         public class Table<T>
         {
             DB db;

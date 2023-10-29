@@ -9,6 +9,7 @@ using System.Runtime.InteropServices.ComTypes;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using static VHSSD.DB;
 using static VHSSD.Ptfs;
 
 namespace VHSSD
@@ -21,8 +22,11 @@ namespace VHSSD
 
         public DB DB;
 
+        public DB.Table<DB.FS> TableFS;
+
         public VHFS() {
             DB = new DB(this);
+            TableFS = DB.GetTable<DB.FS>();
 
             root = new File(true, 0, this);
         }
