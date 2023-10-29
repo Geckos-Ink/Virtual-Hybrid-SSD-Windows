@@ -77,7 +77,7 @@ namespace VHSSD
                     {
                         index = freeSlots[0];
                         freeSlots.RemoveAt(0);
-                        freeSlotsStream.changed = true;
+                        freeSlotsStream.Changed = true;
                     }
                     else 
                         index = Length;
@@ -91,7 +91,7 @@ namespace VHSSD
             public void Delete(long index)
             {
                 freeSlots.Add(index);
-                freeSlotsStream.changed = true;
+                freeSlotsStream.Changed = true;
             }
 
             long Length
@@ -350,11 +350,12 @@ namespace VHSSD
                 else 
                     keys.Add(key, id);
 
-                stream.changed = true;
+                stream.Changed = true;
             }
 
             public long Get(T key)
             {
+                stream.Changed = stream.Changed; // warn of the usage
                 return keys[key];
             }
 
@@ -367,13 +368,23 @@ namespace VHSSD
         #endregion
 
         #region IterableStreams
-
+        
         public abstract class IterateStream
         {
             internal DB db;
             internal File file;
 
-            public bool changed = false;
+            public long lastChange = 0;
+            bool changed = false;
+            public bool Changed
+            {
+                get { return changed; }
+
+                set {
+                    lastChange = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    changed = value; 
+                }
+            }
             IEnumerable iterate;
 
             internal void InitSaveChecker()
@@ -399,12 +410,12 @@ namespace VHSSD
 
                 getSetType = db.GetType(typeof(T));
 
+                this.InitSaveChecker();
+
                 file = new File(db.dir + "list-" + name);
 
                 if (file.Length > 0)
                     Load();
-
-                this.InitSaveChecker();
             }
 
             public void Load()
@@ -464,6 +475,8 @@ namespace VHSSD
                 this.dict = dict;
 
                 keyValueType = db.GetType(typeof(KeyValue<T,V>));
+
+                this.InitSaveChecker();
 
                 file = new File(db.dir + "odict-" + name);
 
@@ -564,6 +577,48 @@ namespace VHSSD
                     Keys = new OrderedKeys<long>(table.db, prefix);
                 }
 
+                #region OpenedKeyManager
+
+                Dictionary<string, OrderedKeys<long>> openOKs = new Dictionary<string, OrderedKeys<long>>();
+                public OrderedKeys<long> GetOK(string name)
+                {
+                    OrderedKeys<long> res;
+                    if(!openOKs.TryGetValue(name, out res))
+                    {
+                        res = new OrderedKeys<long>(table.db, name);
+                        openOKs[name] = res;
+                    }
+
+                    return res;
+                }
+
+                public void CloseOKs(bool all = false)
+                {
+                    if (all)
+                    {
+                        foreach(var ok in openOKs)
+                            ok.Value.stream.Save();         
+
+                        openOKs.Clear();
+                    }
+                    else
+                    {
+                        var ordered = new OrderedDictionary<long, OrderedKeys<long>>();
+                        foreach(var ok in openOKs)
+                            ordered.Add(ok.Value.stream.lastChange, ok.Value);
+
+                        int i = 0;
+                        while(openOKs.Count < 16 && i < ordered.Items.Count())
+                        {
+                            var ok = ordered[i];
+                            ok.stream.Save();
+                            openOKs.Remove(ok.name);
+                        }
+                    }
+                }
+
+                #endregion
+
                 public void Set (T row, long pos)
                 {
                     var keysStack = new List<OrderedKeys<long>>() { Keys };
@@ -575,7 +630,7 @@ namespace VHSSD
 
                         if(keysStack.Count <= r)
                         {
-                            var nk = new OrderedKeys<long>(table.db, prefix+"-"+path+"-"+nextKeys.ToString("X"));
+                            var nk = GetOK(prefix+"-"+path+"-"+nextKeys.ToString("X"));
                             keysStack.Add(nk);
                         }
 

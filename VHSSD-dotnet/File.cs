@@ -10,8 +10,8 @@ namespace VHSSD
 {
     public class File
     {
-        string fileName;
-        FileStream stream;
+        public string fileName;
+        public FileStream stream;
 
         public File(string fileName)
         {
