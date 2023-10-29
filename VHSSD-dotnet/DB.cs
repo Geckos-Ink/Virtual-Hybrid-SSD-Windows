@@ -120,9 +120,9 @@ namespace VHSSD
         public class Type
         {
             DB db;
-            System.Type type;
+            public System.Type type;
 
-            OrderedDictionary<string, Member> members;
+            public OrderedDictionary<string, Member> members;
 
             public string name;
             public int size = -1;
@@ -289,7 +289,7 @@ namespace VHSSD
                 return null;
             }
 
-            class Member
+            public class Member
             {
                 public FieldInfo info;
                 public Type type;
@@ -343,7 +343,7 @@ namespace VHSSD
                 stream = new OrderedDictionaryStream<T, long>(db, name, keys);
             }
 
-            public void SetKey(T key, long id)
+            public void Set(T key, long id)
             {
                 if (keys.Has(key))
                     keys[key] = id;
@@ -353,16 +353,14 @@ namespace VHSSD
                 stream.changed = true;
             }
 
-            public long GetKey(T key)
+            public long Get(T key)
             {
                 return keys[key];
             }
-        }
 
-        public class OrderedLongKeys : OrderedKeys<long>
-        {
-            public OrderedLongKeys(DB db, string name, int cutBytes=-1):base(db, name) { 
-                stream.cutBytes = cutBytes;
+            public bool Has(T key)
+            {
+                return keys.Has(key);
             }
         }
 
@@ -377,8 +375,6 @@ namespace VHSSD
 
             public bool changed = false;
             IEnumerable iterate;
-
-            public int cutBytes = -1;
 
             internal void InitSaveChecker()
             {
@@ -417,8 +413,6 @@ namespace VHSSD
                     return;
 
                 int size = getSetType.size;
-                if (cutBytes > 0) size -= cutBytes;
-
                 int numRow = (int)file.Length / size;
 
                 var data = file.Read();
@@ -444,10 +438,6 @@ namespace VHSSD
                 foreach(T obj in list)
                 {
                     var bytes = getSetType.ObjToBytes(obj);
-
-                    if (cutBytes > 0)
-                        bytes = bytes.Take(bytes.Length-cutBytes).ToArray();
-                    
                     res.AddRange(bytes);
                 }
 
@@ -487,8 +477,6 @@ namespace VHSSD
                     return;
 
                 int size = keyValueType.size;
-                if (cutBytes > 0) size -= cutBytes;
-
                 int numRow = (int)file.Length / size;
 
                 var data = file.Read();
@@ -517,9 +505,6 @@ namespace VHSSD
 
                     var bytes = keyValueType.ObjToBytes(kv);
 
-                    if (cutBytes > 0)
-                        bytes = bytes.Take(bytes.Length - cutBytes).ToArray();
-
                     res.AddRange(bytes);
                 }
 
@@ -538,7 +523,7 @@ namespace VHSSD
             public Type type;
             public int RowSize = -1;
 
-            public List<object> keys = new List<object>();
+            public List<Key> Keys = new List<Key>();
 
             public Table(DB db, string ctx="")
             {
@@ -549,6 +534,111 @@ namespace VHSSD
 
                 RowSize = type.size;
             }
+
+            #region SetKeys
+
+            public void SetKey(string key1, string key2 = null, string key3 = null)
+            {
+                List<string> keys = new List<string> { key1 };
+                if (key2 != null) keys.Add(key2);
+                if (key3 != null) keys.Add(key3);
+
+                var manager = new Key(this, keys.ToArray());
+            }
+
+            public class Key
+            {
+                public string[] Relation;
+                public OrderedKeys<long> Keys;
+
+                public string prefix;
+                Table<T> table;
+
+                public Key (Table<T> table, string[] relation)
+                {
+                    this.table = table;
+
+                    Relation = relation;
+
+                    prefix = table.ctx + "-" + string.Join("-", relation);
+                    Keys = new OrderedKeys<long>(table.db, prefix);
+                }
+
+                public void Set (T row, long pos)
+                {
+                    var keysStack = new List<OrderedKeys<long>>() { Keys };
+
+                    long nextKeys = 0;
+
+                    for(int r=0; r < Relation.Length; r++) {
+                        var path = string.Join("-", Relation.Take(r+1).ToArray());
+
+                        if(keysStack.Count <= r)
+                        {
+                            var nk = new OrderedKeys<long>(table.db, prefix+"-"+path+"-"+nextKeys.ToString("X"));
+                            keysStack.Add(nk);
+                        }
+
+                        var keys = keysStack[r];
+
+                        var rel = Relation[r];
+                        var val = (long)table.type.members[rel].Extract(row);
+
+                        if (r < Relation.Length - 1)
+                        {
+                            if (keys.Has(val))
+                            {
+                                nextKeys = keys.Get(val);
+                            }
+                            else
+                            {
+                                nextKeys = keys.keys.Last().Value + 1;
+                                keys.Set(val, nextKeys);
+                            }
+                        }
+                        else
+                        {
+                            keys.Set(val, pos);
+                        }
+                    }
+                }
+
+                public long Get(T row)
+                {
+                    var keysStack = new List<OrderedKeys<long>>() { Keys };
+
+                    long nextKeys = 0;
+
+                    for (int r = 0; r < Relation.Length; r++)
+                    {
+                        var path = string.Join("-", Relation.Take(r + 1).ToArray());
+
+                        if (keysStack.Count <= r)
+                        {
+                            var nk = new OrderedKeys<long>(table.db, prefix + "-" + path + "-" + nextKeys.ToString("X"));
+                            keysStack.Add(nk);
+                        }
+
+                        var keys = keysStack[r];
+
+                        var rel = Relation[r];
+                        var val = (long)table.type.members[rel].Extract(row);
+
+                        if (keys.Has(val))
+                        {
+                            nextKeys = keys.Get(val);
+                        }
+                        else
+                        {
+                            return -1;
+                        }
+                    }
+
+                    return nextKeys;
+                }
+            }
+
+            #endregion
 
             public void Insert (T row)
             {

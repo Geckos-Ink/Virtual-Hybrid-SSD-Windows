@@ -29,6 +29,11 @@ namespace VHSSD
             return dictionary.ContainsKey(key);
         }
 
+        public KeyValuePair<TKey, TValue> Last()
+        {
+            return insertionOrder.Last();
+        }
+
         public TValue this[TKey key]
         {
             get { return dictionary[key]; }
