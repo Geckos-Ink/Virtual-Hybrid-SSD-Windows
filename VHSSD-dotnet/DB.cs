@@ -381,36 +381,72 @@ namespace VHSSD
 
             public string name;
 
-            public OrderedDictionary<T, long> keys = new OrderedDictionary<T, long>(); 
-            public OrderedDictionaryStream<T, long> stream;
+            public OrderedDictionary<T, long[]> keys = new OrderedDictionary<T, long[]>(); 
+            public OrderedDictionaryStream<T, long[]> stream;
 
             public OrderedKeys(DB db, string name)
             {
                 this.db = db;
                 this.name = name;
 
-                stream = new OrderedDictionaryStream<T, long>(db, name, keys);
+                stream = new OrderedDictionaryStream<T, long[]>(db, name, keys);
             }
 
             public void Set(T key, long id)
             {
                 if (keys.Has(key))
-                    keys[key] = id;
-                else 
-                    keys.Add(key, id);
+                {
+                    var kk = keys[key].ToList();
+                    kk.Add(id);
+                    keys[key] = kk.ToArray();
+                }
+                else
+                    keys.Add(key, new long[id]);
 
                 stream.Changed = true;
             }
 
             public long Get(T key)
             {
+                return GetAll(key).First();
+            }
+
+            public long[] GetAll(T key)
+            {
                 stream.Changed = stream.Changed; // warn of the usage
                 return keys[key];
             }
 
-            public void Delete(T key)
+            public bool Delete(T key, long index)
             {
-                keys.Remove(key);
+                var kk = GetAll(key);
+
+                bool removeAll = false;
+                if (index >= 0)
+                {
+                    if (!kk.Contains(index))
+                        return false;
+
+                    if (kk.Length == 1)
+                    {  
+                        removeAll = true;
+                    }
+                    else
+                    {
+                        var kkl = kk.ToList();
+                        kkl.Remove(index);
+                        keys[key] = kkl.ToArray();
+                    }
+                }
+                else
+                    removeAll = true;
+
+                if (removeAll)
+                    keys.Remove(key);
+
+                stream.Changed = true;
+
+                return true;
             }
 
             public bool Has(T key)
@@ -588,7 +624,7 @@ namespace VHSSD
         #endregion
 
         public Dictionary<string, object> tables = new Dictionary<string, object>();
-        public Table<T> GetTable<T>(string ctx = "")
+        public Table<T> GetTable<T>(string ctx = "") where T : DBRow
         {
             var t = GetType(typeof(T));
             var name = t.name + (String.IsNullOrEmpty(ctx) ? "" : "-" + ctx);
@@ -603,7 +639,7 @@ namespace VHSSD
             return table as Table<T>;
         }
 
-        public class Table<T>
+        public class Table<T> where T : DBRow
         {
             DB db;
 
@@ -759,7 +795,7 @@ namespace VHSSD
                             }
                             else
                             {
-                                nextKeys = keys.keys.Last().Value + 1;
+                                nextKeys = keys.keys.Last().Value.Max() + 1;
                                 keys.Set(val, nextKeys);
                             }
                         }
@@ -772,9 +808,23 @@ namespace VHSSD
 
                 public long Get(T row)
                 {
+                    var allKeys = GetAll(row);
+
+                    if(row.AbsIndex >= 0)
+                    {
+                        var i = allKeys.ToList().IndexOf(row.AbsIndex);
+                        if (i == -1) return i;
+                        return allKeys[i];
+                    }
+
+                    return allKeys.FirstOrDefault();
+                }
+
+                public long[] GetAll(T row)
+                {
                     var keysStack = new List<OrderedKeys<long>>() { Keys };
 
-                    long nextKeys = -1;
+                    long[] nextKeys = null;
 
                     for (int r = 0; r < Relation.Length; r++)
                     {
@@ -782,7 +832,10 @@ namespace VHSSD
 
                         if (keysStack.Count <= r)
                         {
-                            var nk = new OrderedKeys<long>(table.db, prefix + "-" + path + "-" + nextKeys.ToString("X"));
+                            if (nextKeys == null || nextKeys.Length == 0)
+                                return null;
+
+                            var nk = new OrderedKeys<long>(table.db, prefix + "-" + path + "-" + nextKeys.First().ToString("X"));
                             keysStack.Add(nk);
                         }
 
@@ -793,18 +846,18 @@ namespace VHSSD
 
                         if (keys.Has(val))
                         {
-                            nextKeys = keys.Get(val);
+                            nextKeys = keys.GetAll(val);
                         }
                         else
                         {
-                            return -1;
+                            return null;
                         }
                     }
 
                     return nextKeys;
                 }
 
-                public void Delete (T row)
+                public bool Delete (T row) 
                 {
                     var keysStack = new List<OrderedKeys<long>>() { Keys };
                     var keysAssoc = new List<long>();
@@ -832,7 +885,7 @@ namespace VHSSD
                             keysAssoc.Add(nextKeys);
                         }
                         else
-                            throw new Exception("Unexcepted missing of key");
+                            return false;
 
                     }
 
@@ -842,7 +895,11 @@ namespace VHSSD
                         var keys = keysStack[r];
                         if (prevDied)
                         {
-                            keys.Delete(keysAssoc[r]);
+                            long index = -1;
+                            if (r == Relation.Length - 1)
+                                index = row.AbsIndex;
+
+                            keys.Delete(keysAssoc[r], index);
                         }
 
                         if (keys.keys.Items.Count() == 0 && r > 0)
@@ -855,6 +912,8 @@ namespace VHSSD
                         else
                             prevDied = false;
                     }
+
+                    return true;
                 }
             }
 
@@ -875,30 +934,47 @@ namespace VHSSD
                 return index;
             }
 
-            public long GetIndex (T row, string relation=null)
+            public long[] GetAllIndex(T row, string relation = null)
             {
                 CheckKey();
 
                 if (relation == null) relation = Keys[0].name;
                 relation = relation.Replace(" ", "");
 
-                long index = -1;
-                foreach(var key in Keys)
+                long[] indexes = null;
+                foreach (var key in Keys)
                 {
-                    if(key.name == relation)
+                    if (key.name == relation)
                     {
-                        index = key.Get(row);
+                        indexes = key.GetAll(row);
                         break;
-                    } 
+                    }
                 }
 
-                return index;
+                return indexes;
+            }
+
+            public long GetIndex (T row, string relation=null)
+            {
+                var indexes = GetAllIndex(row, relation);
+
+                if(indexes.Length == 0) return -1;
+
+                if(row.AbsIndex >= 0)
+                {
+                    var i = indexes.ToList().IndexOf(row.AbsIndex);
+                    if (i == -1) return i;
+                    return indexes.Last();
+                }
+
+                return indexes.First();
             }
 
             public T Get(long index)
             {
                 var bytes = bytesTable.Get(index);
                 var res = (T)type.BytesToObject(bytes);
+                res.AbsIndex = index;
                 return res;
             }
 
@@ -910,6 +986,19 @@ namespace VHSSD
                     return default(T);
 
                 return Get(index);
+            }
+
+            public T[] GetAll(T row, string relation = null)
+            {
+                var res = new List<T>();
+                var indexes = GetAllIndex(row, relation);
+
+                foreach(var i in indexes)
+                {
+                    res.Add(Get(i));
+                }
+
+                return res.ToArray();
             }
 
             public void Delete(long index)
@@ -942,7 +1031,17 @@ namespace VHSSD
 
         #region Tables
 
-        public class FS
+        public abstract class DBRow
+        {
+            public long AbsIndex { get; set; }
+
+            public DBRow()
+            {
+                AbsIndex = -1;
+            }
+        }
+
+        public class FS : DBRow
         {
             public long ID;
             public long Parent;
@@ -964,7 +1063,7 @@ namespace VHSSD
             public byte[] SecurityDescription;
         }
 
-        public class Chuck
+        public class Chuck : DBRow
         {
             public long ID;
             public long Part;
