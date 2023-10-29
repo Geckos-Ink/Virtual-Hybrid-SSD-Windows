@@ -26,7 +26,9 @@ namespace VHSSD
 
         public VHFS() {
             DB = new DB(this);
+
             TableFS = DB.GetTable<DB.FS>();
+            TableFS.SetKey("Parent", "ID");
 
             root = new File(true, 0, this);
         }
@@ -129,6 +131,39 @@ namespace VHSSD
                 fs.ID = ID;
                 fs.Parent = parent == null ? -1 : parent.ID;
 
+                fs = this.fs.TableFS.Get(fs, "Parent,ID");
+
+                attributes.FileAttributes = fs.FileAttributes;
+                attributes.GrantedAccess = fs.GrantedAccess;
+                attributes.LastAccessTime = fs.LastAccessTime;
+                attributes.LastWriteTime = fs.LastWriteTime;
+                attributes.AllocationSize = fs.AllocationSize;
+                attributes.ChangeTime = fs.ChangeTime;
+                attributes.CreationTime = fs.CreationTime;
+                attributes.FileSize = fs.FileSize;
+                attributes.SecurityDescription = fs.SecurityDescription;
+
+                loaded = true;
+            }
+
+            void Save()
+            {
+                var fs = new FS();
+
+                fs.ID = ID;
+                fs.Parent = parent != null ? parent.ID : -1;
+
+                fs.FileAttributes = attributes.FileAttributes;
+                fs.GrantedAccess = attributes.GrantedAccess;
+                fs.LastAccessTime = attributes.LastAccessTime;
+                fs.LastWriteTime = attributes.LastWriteTime;
+                fs.AllocationSize = attributes.AllocationSize;
+                fs.ChangeTime = attributes.ChangeTime;
+                fs.CreationTime = attributes.CreationTime;
+                fs.FileSize = attributes.FileSize;
+                fs.SecurityDescription = attributes.SecurityDescription;
+
+                this.fs.TableFS.Insert(fs, "Parent,ID");
             }
 
             #endregion

@@ -125,6 +125,7 @@ namespace VHSSD
             DB db;
             public System.Type type;
 
+            public Member firstMember;
             public OrderedDictionary<string, Member> members;
 
             public string name;
@@ -165,6 +166,9 @@ namespace VHSSD
                     foreach (var member in members)
                     {
                         var m = new Member(db, member);
+
+                        if (firstMember == null) firstMember = m;
+
                         this.members.Add(member.Name, m);
 
                         if (m.type.hasDynamicSize)
@@ -603,6 +607,8 @@ namespace VHSSD
 
                 RowSize = type.size;
                 bytesTable = db.GetBytesTable(RowSize);
+
+                SetKey(type.firstMember.info.Name);
             }
 
             public void Close()
@@ -620,6 +626,12 @@ namespace VHSSD
                 List<string> keys = new List<string> { key1 };
                 if (key2 != null) keys.Add(key2);
                 if (key3 != null) keys.Add(key3);
+
+                var name = String.Join(",", keys);
+
+                foreach (var key in Keys)
+                    if (key.name == name)
+                        return; //it already exists
 
                 var manager = new Key(this, keys.ToArray());
                 Keys.Add(manager);
@@ -741,7 +753,7 @@ namespace VHSSD
                 {
                     var keysStack = new List<OrderedKeys<long>>() { Keys };
 
-                    long nextKeys = 0;
+                    long nextKeys = -1;
 
                     for (int r = 0; r < Relation.Length; r++)
                     {
@@ -827,10 +839,12 @@ namespace VHSSD
 
             #endregion
 
-            public void Insert (T row)
+            public void Insert (T row, string relation=null, long index = -1)
             {
+                if(index == -1) index = GetIndex(row, relation);
+
                 var bytes = type.ObjToBytes(row);
-                var index = bytesTable.Set(bytes);
+                index = bytesTable.Set(bytes, index);
 
                 foreach(var key in Keys)
                     key.Set(row, index);
@@ -865,18 +879,6 @@ namespace VHSSD
             {
                 var index = GetIndex(row, relation);
                 return Get(index);
-            }
-
-            public void Update(T row, string relation = null)
-            {
-                var index = GetIndex(row, relation);
-                var bytes = type.ObjToBytes(row);
-                bytesTable.Set(bytes, index);
-
-                // Update keys
-                //todo: check if key are changed
-                foreach (var key in Keys)
-                    key.Set(row, index);
             }
 
             public void Delete(long index)
