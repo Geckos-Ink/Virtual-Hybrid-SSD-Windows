@@ -17,12 +17,17 @@ namespace VHSSD
     // Virtual Hybrid File System
     public class VHFS
     {
+        public string Name = "drive";
+
         public File root;
         public long MaxID = 0;
 
         public DB DB;
 
         public DB.Table<DB.FS> TableFS;
+
+        public List<Drive> SSDDrives = new List<Drive>();
+        public List<Drive> HDDDrives = new List<Drive>();
 
         public VHFS() {
             DB = new DB(this);
@@ -31,6 +36,18 @@ namespace VHSSD
             TableFS.SetKey("Parent", "ID");
 
             root = new File(true, 0, this);
+        }
+
+        public Drive AddDrive(string letter, bool ssd)
+        {
+            var drive = new Drive(this, letter, ssd);
+
+            if (ssd)
+                SSDDrives.Add(drive);
+            else
+                HDDDrives.Add(drive);
+
+            return drive;
         }
 
         public File GetFile(string path)
@@ -73,6 +90,34 @@ namespace VHSSD
             file.parent.files.Unset(file.name);
 
             AddFile(file, newFileName);
+        }
+
+        public class Drive
+        {
+            public VHFS vhfs;
+
+            public string letter;
+            public bool ssd;
+
+            public DriveInfo info;
+
+            public string Dir;
+
+            public Drive(VHFS vhfs, string letter, bool ssd)
+            {
+                this.vhfs = vhfs;
+
+                this.letter = letter;
+                this.ssd = ssd;
+
+                info = new DriveInfo(letter + ":\\");
+
+                Dir = letter + ":\\vhssd";
+                Static.CreateDirIfNotExists(Dir);
+
+                Dir += "\\" + vhfs.Name;
+                Static.CreateDirIfNotExists(Dir);
+            }
         }
 
         public class File

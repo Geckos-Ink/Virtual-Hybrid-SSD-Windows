@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -14,6 +16,11 @@ namespace VHSSD
             {
                 return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             }
+        }
+
+        public static void CreateDirIfNotExists(string path)
+        {
+            if (!Directory.Exists(path)) Directory.CreateDirectory(path);
         }
     }
 

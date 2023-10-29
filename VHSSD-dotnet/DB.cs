@@ -24,11 +24,11 @@ namespace VHSSD
         {
             this.vhfs = vhfs;
 
-            var dataDir = "data/";
-            if(!Directory.Exists(dataDir)) Directory.CreateDirectory(dataDir);
+            var dataDir = "db/";
+            Static.CreateDirIfNotExists(dataDir);
 
-            dir = dataDir + "dev/";
-            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+            dir = dataDir + vhfs.Name+"/";
+            Static.CreateDirIfNotExists(dir);
         }
 
         #region BytesTables 
@@ -962,6 +962,21 @@ namespace VHSSD
             public ulong LastWriteTime;
             public ulong ChangeTime;
             public byte[] SecurityDescription;
+        }
+
+        public class Chuck
+        {
+            public long ID;
+            public long Part;
+
+            public short SSD_ID;
+            public ushort SSD_Version;
+
+            public short HDD_ID;
+            public ushort HDD_Version;
+
+            public double Temperature;
+            public long LastAccess;
         }
 
         #endregion
