@@ -108,6 +108,62 @@ namespace VHSSD
             {
                 return (double)info.TotalFreeSpace / (double)info.TotalSize;
             }
+
+            #region Stats
+
+            public long OpenFiles = 0;
+
+            public long AvgBytesRead = 0;
+            Dictionary<long, long> bytesRead = new Dictionary<long, long>();
+            public void addReadBytes(long length)
+            {
+                var now = Static.UnixTime;
+                if (bytesRead.ContainsKey(now))
+                {
+                    bytesRead[now] += length;
+                }
+                else
+                {
+                    if (bytesRead.Count > 0)
+                    {
+                        var prev = bytesRead.First();
+                        AvgBytesRead = (AvgBytesRead + prev.Value) / 2;
+                        bytesRead.Remove(prev.Key);
+                    }
+
+
+                    bytesRead.Add(now, length);
+                }
+            }
+
+            public long AvgBytesWrite = 0;
+            Dictionary<long, long> bytesWrite = new Dictionary<long, long>();
+            public void addWriteBytes(long length)
+            {
+                var now = Static.UnixTime;
+                if (bytesWrite.ContainsKey(now))
+                {
+                    bytesWrite[now] += length;
+                }
+                else
+                {
+                    if (bytesWrite.Count > 0)
+                    {
+                        var prev = bytesWrite.First();
+                        AvgBytesWrite = (AvgBytesWrite + prev.Value) / 2;
+                        bytesWrite.Remove(prev.Key);
+                    }
+
+                    bytesWrite.Add(now, length);
+                }
+            }
+
+            public long Traffic
+            {
+                get { return AvgBytesRead + AvgBytesRead; }
+            }
+
+            #endregion
         }
 
         #endregion

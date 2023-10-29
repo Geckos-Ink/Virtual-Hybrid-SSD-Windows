@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -27,10 +28,29 @@ namespace VHSSD
             timerDispose = new Timer(TimerDispose, null, 0, 1000);
         }
 
+        Random rand = new Random();
         OrderedDictionary<long, Chuck> chucksTemperature = new OrderedDictionary<long, Chuck>();
         public void TimerDispose(object state)
         {
             chucksTemperature.Clear();
+
+            foreach(var idChucks in chucks)
+            {
+                foreach(var chuck in idChucks.Value)
+                {
+                    var temp = chuck.Value.chuckRow.Temperature;
+
+                    // Differentiate randomly temperature
+                    int var = 1;
+                    while (chucksTemperature.Has(temp))
+                    {
+                        temp += rand.Next(var * -1, var);
+                        var++;
+                    }
+
+                    chucksTemperature.Add(temp, chuck.Value);
+                }
+            }
         }
 
         public struct Part
@@ -188,7 +208,7 @@ namespace VHSSD
         {
             Chucks chucks;
 
-            DB.Chuck chuckRow;
+            public DB.Chuck chuckRow;
 
             File fileHDD;
             File fileSSD;
@@ -238,13 +258,13 @@ namespace VHSSD
                 if(fileSSD == null && chuckRow.SSD_ID >= 0)
                 {
                     var drive = chucks.vhfs.SSDDrives[chuckRow.SSD_ID];
-                    fileSSD = new File(drive.Dir + chuckName);
+                    fileSSD = new File(drive.Dir + chuckName, drive);
                 }
 
                 if(chuckRow.SSD_ID < 0 || all || !SSDUpdated())
                 {
                     var drive = chucks.vhfs.HDDDrives[chuckRow.HDD_ID];
-                    fileHDD = new File(drive.Dir + chuckName);
+                    fileHDD = new File(drive.Dir + chuckName, drive);
                 }
             }
 
@@ -267,6 +287,7 @@ namespace VHSSD
             {
                 if (fileSSD != null && SSDUpdated())
                 {
+                    onHDD = false;
                     return fileSSD;
                 }
                 else
@@ -287,7 +308,9 @@ namespace VHSSD
 
             public long CalculateAvgUsage()
             {
-                chuckRow.Temperature = ((chuckRow.Temperature * (long)Usages) + chucks.Traffic) / ((long)Usages + 1);
+                // More precision to temperature to compensante integer flooring
+                double temp = ((chuckRow.Temperature * Usages) + (chucks.Traffic*100)) / (Usages + 1);
+                chuckRow.Temperature = (long)temp;
 
                 long now = Static.UnixTimeMS;
 
@@ -299,6 +322,7 @@ namespace VHSSD
                 return now;
             }
 
+
             public bool InOperation = false;
 
             public byte[] Read(Part part)
@@ -307,6 +331,7 @@ namespace VHSSD
 
                 var file = BestDrive();                
                 var res = file.Read(part.length, part.pos);
+
                 LastRead = CalculateAvgUsage();
 
                 InOperation = false;
@@ -321,7 +346,7 @@ namespace VHSSD
                 file.Write(bytes, part.pos);
 
                 LastWrite = CalculateAvgUsage();
-
+                
                 IncreaseVersion();
 
                 InOperation = false;

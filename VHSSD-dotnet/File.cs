@@ -5,24 +5,33 @@ using System.IO.Pipes;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static VHSSD.Chucks;
 
 namespace VHSSD
 {
     public class File
     {
+        public VHFS.Drive drive;
+
         public string fileName;
         public FileStream stream;
 
-        public File(string fileName)
+        public File(string fileName, VHFS.Drive drive=null)
         {
+            this.drive = drive;
+
             this.fileName = fileName;
             stream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+
+            drive?.OpenFiles++;
         }
 
         public void Write(byte[] data, long pos = -1)
         {
             bool resize = pos == -1;
             if (resize) pos = 0;
+
+            drive?.addWriteBytes(data.Length);
 
             // Set the position in the file
             stream.Seek(pos, SeekOrigin.Begin);
@@ -37,6 +46,8 @@ namespace VHSSD
         {
             bool allFile = len == 0;
             if (allFile) len = stream.Length;
+
+            drive?.addReadBytes(len);
 
             // Set the position in the file
             stream.Seek(pos, SeekOrigin.Begin);
@@ -68,6 +79,8 @@ namespace VHSSD
             {
                 Flush();
                 stream.Close();
+
+                drive.OpenFiles--;
             }
         }
 
