@@ -245,6 +245,9 @@ namespace VHSSD
             {
                 if(type.IsValueType)
                 {
+                    if(type == typeof(char)) 
+                        return Convert.ToChar(bytes);
+
                     if (type == typeof(bool))
                         return BitConverter.ToBoolean(bytes, 0);
 
@@ -878,6 +881,10 @@ namespace VHSSD
             public T Get(T row, string relation = null)
             {
                 var index = GetIndex(row, relation);
+
+                if (index == -1)
+                    return default(T);
+
                 return Get(index);
             }
 
@@ -911,12 +918,15 @@ namespace VHSSD
 
         #region Tables
 
-        public struct FS
+        public class FS
         {
             public long ID;
             public long Parent;
 
+            public char[] Name;
+
             public bool IsDirectory;
+            public long[] Files;
 
             // Attributes
             public uint FileAttributes;

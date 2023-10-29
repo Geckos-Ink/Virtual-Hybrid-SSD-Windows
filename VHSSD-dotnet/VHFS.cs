@@ -77,7 +77,7 @@ namespace VHSSD
 
         public class File
         {
-            public VHFS fs;
+            public VHFS vhfs;
 
             public long ID;
 
@@ -108,22 +108,32 @@ namespace VHSSD
                 }
             }
 
+            public File(long id, VHFS vhfs, File parent=null)
+            {
+                this.parent = parent;
+
+                this.ID = id;
+                SetFS(vhfs);
+
+                Load();
+            }
+
             public void SetFS(VHFS vhfs)
             {
-                if (fs != null || vhfs == null)
+                if (this.vhfs != null || vhfs == null)
                     return;
 
-                fs = vhfs;
+                this.vhfs = vhfs;
 
                 if (this.ID == -1)
-                    this.ID = ++fs.MaxID;
+                    this.ID = ++this.vhfs.MaxID;
             }
 
             #region LazyLoadSave
 
             bool loaded = false;
 
-            void Load()
+            void Load(bool lazy=false)
             {
                 if (loaded) return;
 
@@ -131,7 +141,16 @@ namespace VHSSD
                 fs.ID = ID;
                 fs.Parent = parent == null ? -1 : parent.ID;
 
-                fs = this.fs.TableFS.Get(fs, "Parent,ID");
+                fs = this.vhfs.TableFS.Get(fs, "Parent,ID");
+
+                if (fs == null)
+                {
+                    loaded = true;
+                    return;
+                }
+
+                name = fs.Name.ToString();
+                isDirectory = fs.IsDirectory;
 
                 attributes.FileAttributes = fs.FileAttributes;
                 attributes.GrantedAccess = fs.GrantedAccess;
@@ -143,7 +162,30 @@ namespace VHSSD
                 attributes.FileSize = fs.FileSize;
                 attributes.SecurityDescription = fs.SecurityDescription;
 
+                /// Load tree
+                filesIDs = fs.Files;
+                if(!lazy)
+                    LoadFiles();
+
                 loaded = true;
+            }
+
+            bool loadedFiles = false;
+
+            long[] filesIDs;
+            void LoadFiles()
+            {
+                if (isDirectory && !loadedFiles)
+                {
+                    foreach (var fid in filesIDs)
+                    {
+                        var file = new File(fid, this.vhfs, this);
+                        file.Load(true);
+                        files.Set(file.name, file);
+                    }
+                }
+
+                loadedFiles = true;
             }
 
             void Save()
@@ -152,6 +194,8 @@ namespace VHSSD
 
                 fs.ID = ID;
                 fs.Parent = parent != null ? parent.ID : -1;
+
+                fs.Name = name.ToCharArray();
 
                 fs.FileAttributes = attributes.FileAttributes;
                 fs.GrantedAccess = attributes.GrantedAccess;
@@ -163,7 +207,7 @@ namespace VHSSD
                 fs.FileSize = attributes.FileSize;
                 fs.SecurityDescription = attributes.SecurityDescription;
 
-                this.fs.TableFS.Insert(fs, "Parent,ID");
+                this.vhfs.TableFS.Insert(fs, "Parent,ID");
             }
 
             #endregion
@@ -175,7 +219,6 @@ namespace VHSSD
                 file.parent = this;
                 files.Set(file.name, file);
             }
-
 
             public File GetFile(string name)
             {
