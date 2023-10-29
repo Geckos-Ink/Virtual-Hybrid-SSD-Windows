@@ -197,9 +197,24 @@ namespace VHSSD
                 else
                 {
                     if (type.IsArray)
-                    {
-                        //todo
-                        throw new NotSupportedException();
+                    {           
+                        List<byte> resBytes = new List<byte>();
+
+                        var arrayOf = db.GetType(type.GetElementType());
+
+                        var arr = obj as object[];
+                        foreach(var item in arr)
+                        {
+                            var bytes = arrayOf.ObjToBytes(item);
+                            resBytes.AddRange(bytes);
+                        }
+
+                        var index = new DataIndex();
+                        index.Size = resBytes.Count;
+                        index.Index = db.GetBytesTable(index.Size).Set(resBytes.ToArray());
+
+                        var tDataIndex = db.GetType(typeof(DataIndex));
+                        return tDataIndex.ObjToBytes(index);
                     }
                     else
                     {
@@ -211,6 +226,8 @@ namespace VHSSD
                             var valBytes = member.Value.type.ObjToBytes(val);
                             bytes.AddRange(valBytes);
                         }
+
+                        return bytes.ToArray();
                     }
                 }
 
@@ -255,18 +272,26 @@ namespace VHSSD
                 {
                     if (type.IsArray)
                     {
-                        //todo with dynamic management
-                        throw new NotImplementedException();
+                        // Retrieve DataIndex
+                        var tDataIndex = db.GetType(typeof(DataIndex));
+                        var index = (DataIndex) tDataIndex.BytesToObject(bytes);
+
+                        // Get bytes
+                        var allBytes = db.GetBytesTable(index.Size).Get(index.Index);
 
                         if (type == typeof(byte[]))
-                            return bytes;
+                            return allBytes;
 
                         var arrayOf = db.GetType(type.GetElementType());
                         List<object> list = new List<object>();
-                        for(int i = 0; i<bytes.Length; i++)
+                        for(int i = 0; i< allBytes.Length; i++)
                         {
-                            var itemData = bytes.Skip(i).Take(arrayOf.size).ToArray();
+                            var itemData = allBytes.Skip(i).Take(arrayOf.size).ToArray();
+                            var obj = arrayOf.BytesToObject(itemData);
+                            list.Add(obj);
                         }
+
+                        return list.ToArray();
                     }
                     else
                     {
