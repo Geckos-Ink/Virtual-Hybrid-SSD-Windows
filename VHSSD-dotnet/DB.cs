@@ -882,7 +882,7 @@ namespace VHSSD
                         if (keys.Has(val))
                         {
                             nextKeys = keys.Get(val);
-                            keysAssoc.Add(nextKeys);
+                            keysAssoc.Add(val);
                         }
                         else
                             return false;
