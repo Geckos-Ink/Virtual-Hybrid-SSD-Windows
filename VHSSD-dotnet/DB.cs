@@ -1078,7 +1078,13 @@ namespace VHSSD
             public short HDD_Version = -1;
 
             public long Temperature = 0;
-            public long LastAccess = 0;
+
+            public long LastUsage;
+            public long LastWrite;
+            public long LastRead;
+
+            public double AvgUsage;
+            public double Usages = 0;
         }
 
         #endregion

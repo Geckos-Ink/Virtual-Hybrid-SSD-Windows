@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Net.Mime;
@@ -19,7 +20,6 @@ namespace VHSSD
     {
         public string Name = "drive";
 
-        public long chuckSize = 1024 * 1024; // 1 MB
         public Chucks chucks;
 
         public File root;
@@ -32,7 +32,11 @@ namespace VHSSD
         public List<Drive> SSDDrives = new List<Drive>();
         public List<Drive> HDDDrives = new List<Drive>();
 
+        public Settings Sets;
+
         public VHFS() {
+            Sets = new Settings();
+
             DB = new DB(this);
 
             chucks = new Chucks(this);
@@ -41,6 +45,13 @@ namespace VHSSD
             TableFS.SetKey("Parent", "ID");
 
             root = new File(true, 0, this);
+        }
+
+        public class Settings
+        {
+            public long chuckSize = 1024 * 1024; // 1 MB
+            public long closeChuckAfter = 1000 * 10; // 10 seconds
+            public int maxOpenedChucks = 32;
         }
 
         #region Drives 
