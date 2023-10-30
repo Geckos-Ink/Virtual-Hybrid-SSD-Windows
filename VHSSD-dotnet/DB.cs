@@ -397,8 +397,11 @@ namespace VHSSD
                 if (keys.Has(key))
                 {
                     var kk = keys[key].ToList();
-                    kk.Add(id);
-                    keys[key] = kk.ToArray();
+                    if (kk.IndexOf(id) == -1)
+                    {
+                        kk.Add(id);
+                        keys[key] = kk.ToArray();
+                    }
                 }
                 else
                     keys.Add(key, new long[id]);
