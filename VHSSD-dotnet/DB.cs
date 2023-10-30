@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Collections;
 using System.Runtime.CompilerServices;
 using System.CodeDom;
+using Newtonsoft.Json;
 
 namespace VHSSD
 {
@@ -192,13 +193,29 @@ namespace VHSSD
 
             public bool CompareObjs(object obj1, object obj2)
             {
+                if (type.IsValueType)
+                {
+                    return obj1 == obj2;
+                }
+
+                if (type.IsArray)
+                {
+                    var a1 = obj1 as object[];
+                    var a2 = obj2 as object[];
+                    return a1.SequenceEqual(a2);
+                }
+
                 foreach(var member in this.members.Items)
                 {
                     var m1 = member.Value.Extract(obj1);
                     var m2 = member.Value.Extract(obj2);
 
-                    if(m1 != m2) 
-                        return false;
+                    if (m1 == m2 && m1 == null) return true;
+                    if (m1 == null || m2 == null) return false;
+
+                    var t = db.GetType(m1.GetType());
+                    if (t.CompareObjs(m1, m2))
+                        return true;
                 }
 
                 return true;
@@ -926,6 +943,7 @@ namespace VHSSD
             {
                 CheckKey();
 
+                if (row.AbsIndex >= 0) index = row.AbsIndex;
                 if (index == -1) index = GetIndex(row, relation);
 
                 var bytes = type.ObjToBytes(row);
@@ -941,13 +959,12 @@ namespace VHSSD
             {
                 CheckKey();
 
-                if (relation == null) relation = Keys[0].name;
-                relation = relation.Replace(" ", "");
+                relation = relation?.Replace(" ", "");
 
                 long[] indexes = null;
                 foreach (var key in Keys)
                 {
-                    if (key.name == relation)
+                    if (relation == null || key.name == relation)
                     {
                         indexes = key.GetAll(row);
                         break;
@@ -1041,6 +1058,12 @@ namespace VHSSD
             public DBRow()
             {
                 AbsIndex = -1;
+            }
+
+            public T Clone<T>() where T : DBRow
+            {
+                string serializedObject = JsonConvert.SerializeObject(this);
+                return JsonConvert.DeserializeObject<T>(serializedObject);
             }
         }
 

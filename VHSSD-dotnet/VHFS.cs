@@ -318,7 +318,7 @@ namespace VHSSD
                 if(!lazy)
                     LoadFiles();
 
-                lastFS = fs;
+                lastFS = fs.Clone<DB.FS>();
                 loaded = true;
             }
 
@@ -364,7 +364,7 @@ namespace VHSSD
                 var tFS = vhfs.DB.GetType(typeof(DB.FS));
                 if (!tFS.CompareObjs(fs, lastFS))
                 {
-                    this.vhfs.TableFS.Set(fs, "Parent,ID");
+                    this.vhfs.TableFS.Set(fs);
                     lastFS = fs;
                     lastSave = Static.UnixTimeMS;
                 }
