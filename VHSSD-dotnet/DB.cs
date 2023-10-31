@@ -131,33 +131,47 @@ namespace VHSSD
 
             public string name;
             public int size = -1;
+            public bool isString = false;
 
             public bool hasDynamicSize = false;
 
-            //public bool iterate = false;
-            //public Type iterateType;
+            public bool iterate = false;
+            public System.Type[] iterateTypes;
+            public bool isList = false;
+            public bool isDictionary = false;
 
             public Type(DB db, System.Type type)
             {
                 this.db = db;
+
+                if(type == typeof(string))
+                {
+                    type = typeof(char[]);
+                    isString = true;
+                }
+
                 this.type = type;
 
                 name = type.Name;
 
-                /*if (type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>)))
+                if (type.IsGenericType)
                 {
-                    iterate = true;
+                    if (type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>)))
+                    {
+                        iterate = true;
 
-                    // Get generic type argument(s)
-                    System.Type genericArgument = type.GetInterfaces()
-                                    .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-                                    .Select(i => i.GetGenericArguments()[0])
-                                    .FirstOrDefault();
+                        // Get generic type argument(s)
+                        iterateTypes = type.GetInterfaces()
+                                        .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                                        .Select(i => i.GetGenericArguments()[0]).ToArray();
 
-                    iterateType = db.GetType(genericArgument);
-                }*/
-                
-                if (type.IsClass)
+                        var genType = type.GetGenericTypeDefinition();
+
+                        isList = genType == typeof(List<>);
+                        isDictionary = genType == typeof(Dictionary<,>);
+                    }
+                }
+                else if (type.IsClass)
                 {
                     this.members = new OrderedDictionary<string, Member>();
 
@@ -223,6 +237,9 @@ namespace VHSSD
 
             public byte[] ObjToBytes (object obj)
             {
+                if (isString)
+                    obj = ((string)obj).ToCharArray();
+
                 if (type.IsValueType)
                 {
                     using (MemoryStream memoryStream = new MemoryStream())
@@ -331,6 +348,9 @@ namespace VHSSD
                             var obj = arrayOf.BytesToObject(itemData);
                             list.Add(obj);
                         }
+
+                        if (isString)
+                            return new String(list.Select(o => (char)o).ToArray());
 
                         return list.ToArray();
                     }
