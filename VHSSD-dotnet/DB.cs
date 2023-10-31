@@ -122,7 +122,9 @@ namespace VHSSD
         public class Type
         {
             DB db;
+
             public System.Type type;
+            public System.Type originalType;
 
             public Member firstMember;
             public OrderedDictionary<string, Member> members;
@@ -138,19 +140,21 @@ namespace VHSSD
             public bool isList = false;
             public bool isDictionary = false;
 
+            // Precached methods
+            MethodInfo toArrayMethod;
+            MethodInfo toListMethod;
+
             public Type(DB db, System.Type type)
             {
                 this.db = db;
 
-                if(type == typeof(string))
+                originalType = type;
+
+                if (type == typeof(string))
                 {
                     type = typeof(char[]);
                     isString = true;
                 }
-
-                this.type = type;
-
-                name = type.Name;
 
                 if (type.IsGenericType)
                 {
@@ -167,9 +171,31 @@ namespace VHSSD
 
                         isList = genType == typeof(List<>);
                         isDictionary = genType == typeof(Dictionary<,>);
+
+                        if (isList)
+                        {
+                            var t = iterateTypes[0];
+                            type = t.MakeArrayType();
+
+                            toArrayMethod = originalType.GetMethod("ToArray");
+                            toListMethod = type.GetMethod("ToList");
+                        }
+
+                        if (isDictionary)
+                        {
+                            throw new Exception("Dictionaries needs still to be implemented");
+                        }
                     }
                 }
-                else if (type.IsClass)
+
+                ///
+                ///
+
+                this.type = type;
+
+                name = type.Name;
+
+                if (type.IsClass)
                 {
                     this.members = new OrderedDictionary<string, Member>();
 
@@ -250,7 +276,14 @@ namespace VHSSD
                 else
                 {
                     if (type.IsArray)
-                    {           
+                    {
+                        if (isList)
+                        {
+                            // Convert to array
+                            object[] parameters = new object[] { };
+                            obj = toArrayMethod.Invoke(obj, parameters);
+                        }
+
                         List<byte> resBytes = new List<byte>();
 
                         var arrayOf = db.GetType(type.GetElementType());
@@ -350,7 +383,16 @@ namespace VHSSD
                         if (isString)
                             return new String(list.Select(o => (char)o).ToArray());
 
-                        return list.ToArray();
+                        var arr = list.ToArray();
+
+                        if (isList)
+                        {
+                            // Convert array to list (yes a little twisted)
+                            object[] parameters = new object[] { };
+                            return toListMethod.Invoke(arr, parameters);
+                        }
+
+                        return arr;
                     }
                     else
                     {
@@ -416,30 +458,30 @@ namespace VHSSD
 
             public string name;
 
-            public OrderedDictionary<T, long[]> keys = new OrderedDictionary<T, long[]>(); 
-            public OrderedDictionaryStream<T, long[]> stream;
+            public OrderedDictionary<T, List<long>> keys = new OrderedDictionary<T, List<long>>(); 
+            public OrderedDictionaryStream<T, List<long>> stream;
 
             public OrderedKeys(DB db, string name)
             {
                 this.db = db;
                 this.name = name;
 
-                stream = new OrderedDictionaryStream<T, long[]>(db, name, keys);
+                stream = new OrderedDictionaryStream<T, List<long>>(db, name, keys);
             }
 
             public void Set(T key, long id)
             {
                 if (keys.Has(key))
                 {
-                    var kk = keys[key].ToList();
+                    var kk = keys[key];
                     if (kk.IndexOf(id) == -1)
                     {
                         kk.Add(id);
-                        keys[key] = kk.ToArray();
+                        keys[key] = kk;
                     }
                 }
                 else
-                    keys.Add(key, new long[id]);
+                    keys.Add(key, new List<long> { id });
 
                 stream.Changed = true;
             }
@@ -449,7 +491,7 @@ namespace VHSSD
                 return GetAll(key).First();
             }
 
-            public long[] GetAll(T key)
+            public List<long> GetAll(T key)
             {
                 stream.Changed = stream.Changed; // warn of the usage
                 return keys[key];
@@ -465,15 +507,14 @@ namespace VHSSD
                     if (!kk.Contains(index))
                         return false;
 
-                    if (kk.Length == 1)
+                    if (kk.Count == 1)
                     {  
                         removeAll = true;
                     }
                     else
                     {
-                        var kkl = kk.ToList();
-                        kkl.Remove(index);
-                        keys[key] = kkl.ToArray();
+                        kk.Remove(index);
+                        keys[key] = kk;
                     }
                 }
                 else
@@ -962,6 +1003,19 @@ namespace VHSSD
                 }
             }
 
+            public Key GetKey(string relation)
+            {
+                foreach (var key in Keys)
+                {
+                    if (relation == null || key.name == relation)
+                    {
+                        return key;
+                    }
+                }
+
+                return null;
+            }
+
             #endregion
 
             public long Set (T row, string relation=null, long index = -1)
@@ -987,14 +1041,10 @@ namespace VHSSD
                 relation = relation?.Replace(" ", "");
 
                 long[] indexes = null;
-                foreach (var key in Keys)
-                {
-                    if (relation == null || key.name == relation)
-                    {
-                        indexes = key.GetAll(row);
-                        break;
-                    }
-                }
+                var key = GetKey(relation);
+
+                if(key != null)
+                    indexes = key.GetAll(row);
 
                 return indexes;
             }

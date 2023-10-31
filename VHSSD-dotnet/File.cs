@@ -16,6 +16,8 @@ namespace VHSSD
         public string fileName;
         public FileStream stream;
 
+        long openingLength = 0;
+
         public File(string fileName, VHFS.Drive drive=null)
         {
             this.drive = drive;
@@ -23,7 +25,9 @@ namespace VHSSD
             this.fileName = fileName;
             stream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite);
 
-            drive?.OpenFiles++;
+            openingLength = Length;
+
+            if(drive != null) drive.OpenFiles++;
         }
 
         public void Write(byte[] data, long pos = -1)
@@ -80,7 +84,11 @@ namespace VHSSD
                 Flush();
                 stream.Close();
 
-                drive.OpenFiles--;
+                if (drive != null)
+                {
+                    drive.OpenFiles--;
+                    drive.row.UsedBytes += Length - openingLength;
+                }
             }
         }
 

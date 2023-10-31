@@ -23,6 +23,8 @@ namespace VHSSD
 
             tableChuck = vhfs.DB.GetTable<DB.Chuck>();
             tableChuck.SetKey("ID", "Part");
+            tableChuck.SetKey("Temperature");
+            tableChuck.SetKey("LastUsage");
         } 
 
         public struct Part
