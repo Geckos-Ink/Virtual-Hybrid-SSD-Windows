@@ -113,7 +113,7 @@ namespace VHSSD
             {
                 this.vhfs = vhfs;
 
-                id = (short)(vhfs.SSDDrives.Count + vhfs.HDDDrives.Count);
+                id = (short)(vhfs.AllDrives.Count);
 
                 this.letter = letter;
                 this.ssd = ssd;
