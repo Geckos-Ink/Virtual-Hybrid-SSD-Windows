@@ -109,6 +109,8 @@ namespace VHSSD
 
             public DB.Drive row;
 
+            public long MaxSize = -1;
+
             public Drive(VHFS vhfs, string letter, bool ssd)
             {
                 this.vhfs = vhfs;
@@ -130,6 +132,8 @@ namespace VHSSD
                 dbRow.ID = id;
 
                 row = vhfs.TableDrive.Get(dbRow) ?? dbRow;
+
+                MaxSize = (info.AvailableFreeSpace) / 2;
             }
 
             public void Close()
