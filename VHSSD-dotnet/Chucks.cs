@@ -15,9 +15,7 @@ namespace VHSSD
 
         DB.Table<DB.Chuck> tableChuck;
 
-        Dictionary<long, Dictionary<long, Chuck>> chucks = new Dictionary<long, Dictionary<long, Chuck>>();
-
-        Timer timerDispose;
+        public Dictionary<long, Dictionary<long, Chuck>> chucks = new Dictionary<long, Dictionary<long, Chuck>>();
 
         public Chucks(VHFS vhfs)
         {
@@ -25,38 +23,7 @@ namespace VHSSD
 
             tableChuck = vhfs.DB.GetTable<DB.Chuck>();
             tableChuck.SetKey("ID", "Part");
-
-            timerDispose = new Timer(TimerDispose, null, 0, 1000);
-        }
-
-        OrderedDictionary<long, Chuck> chucksUsage = new OrderedDictionary<long, Chuck>();
-
-        public void TimerDispose(object state)
-        {
-            chucksUsage.Clear();
-
-            foreach (var idChucks in chucks)
-            {
-                foreach(var chuck in idChucks.Value)
-                {
-                    chucksUsage.Add(chuck.Value.LastUsage, chuck.Value);
-                }
-            }
-
-            var now = Static.UnixTimeMS;
-
-            if (chucksUsage.Items.Count() > vhfs.Sets.maxOpenedChucks || (now - chucksUsage.Items.First().Key) > (vhfs.Sets.closeChuckAfter*2))
-            {
-                foreach(var chuck in chucksUsage.Items)
-                {
-                    var diff = now - chuck.Key;
-                    if (diff < vhfs.Sets.closeChuckAfter)
-                        break;
-
-                    chuck.Value.Close();
-                }
-            }
-        }
+        } 
 
         public struct Part
         {
