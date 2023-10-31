@@ -34,8 +34,12 @@ namespace VHSSD
 
         public Settings Sets;
 
+        public Sync Sync;
+
         public VHFS() {
             Sets = new Settings();
+
+            Sync = new Sync(this);
 
             DB = new DB(this);
 
