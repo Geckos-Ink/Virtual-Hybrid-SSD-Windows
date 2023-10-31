@@ -1135,6 +1135,12 @@ namespace VHSSD
             public double Usages = 0;
         }
 
+        public class Drive : DBRow
+        {
+            public short ID;
+            public long UsedBytes;
+        }
+
         #endregion
     }
 }

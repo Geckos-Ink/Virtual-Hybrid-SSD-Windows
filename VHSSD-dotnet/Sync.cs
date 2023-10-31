@@ -118,6 +118,11 @@ namespace VHSSD
             {
                 table.Value.fileValues.Close();
             }
+
+            foreach(var drive in vhfs.AllDrives)
+            {
+                drive.Close();
+            }
         }
     }
 }

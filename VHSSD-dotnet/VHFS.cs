@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static VHSSD.DB;
 using static VHSSD.Ptfs;
+using static VHSSD.VHFS;
 
 namespace VHSSD
 {
@@ -28,7 +29,9 @@ namespace VHSSD
         public DB DB;
 
         public DB.Table<DB.FS> TableFS;
+        public DB.Table<DB.Drive> TableDrive;
 
+        public List<Drive> AllDrives;
         public List<Drive> SSDDrives = new List<Drive>();
         public List<Drive> HDDDrives = new List<Drive>();
 
@@ -47,6 +50,9 @@ namespace VHSSD
 
             TableFS = DB.GetTable<DB.FS>();
             TableFS.SetKey("Parent", "ID");
+
+            TableDrive = DB.GetTable<DB.Drive>();
+            TableDrive.SetKey("ID");
 
             root = new File(true, 0, this);
         }
@@ -67,15 +73,11 @@ namespace VHSSD
             var drive = new Drive(this, letter, ssd);
 
             if (ssd)
-            {
-                drive.id = (short)SSDDrives.Count;
                 SSDDrives.Add(drive);
-            }
             else
-            {
-                drive.id = (short)HDDDrives.Count;
                 HDDDrives.Add(drive);
-            }
+
+            AllDrives.Add(drive);
 
             return drive;
         }
@@ -105,9 +107,13 @@ namespace VHSSD
 
             public string Dir;
 
+            public DB.Drive row;
+
             public Drive(VHFS vhfs, string letter, bool ssd)
             {
                 this.vhfs = vhfs;
+
+                id = (short)(vhfs.SSDDrives.Count + vhfs.HDDDrives.Count);
 
                 this.letter = letter;
                 this.ssd = ssd;
@@ -119,6 +125,16 @@ namespace VHSSD
 
                 Dir += "\\" + vhfs.Name + "\\";
                 Static.CreateDirIfNotExists(Dir);
+
+                var dbRow = new DB.Drive();
+                dbRow.ID = id;
+
+                row = vhfs.TableDrive.Get(dbRow) ?? dbRow;
+            }
+
+            public void Close()
+            {
+                vhfs.TableDrive.Set(row);
             }
 
             public double FreeSpace()
