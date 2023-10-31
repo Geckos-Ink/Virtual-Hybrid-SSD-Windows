@@ -503,11 +503,18 @@ namespace VHSSD
         #endregion
 
         #region IterableStreams
+
+        public List<IterateStream> iterateStreams = new List<IterateStream>();
         
         public abstract class IterateStream
         {
             internal DB db;
             internal File file;
+
+            public IterateStream()
+            {
+                db.iterateStreams.Add(this);
+            }
 
             public long lastChange = 0;
             bool changed = false;
@@ -538,7 +545,7 @@ namespace VHSSD
 
             public bool sort = false;
 
-            public ListStream(DB db, string name, List<T> list)
+            public ListStream(DB db, string name, List<T> list) : base()
             {
                 this.db = db;
                 this.list = list;
@@ -604,7 +611,7 @@ namespace VHSSD
                 public VV Value;
             }
 
-            public OrderedDictionaryStream(DB db, string name, OrderedDictionary<T, V> dict)
+            public OrderedDictionaryStream(DB db, string name, OrderedDictionary<T, V> dict) : base()
             {
                 this.db = db;
                 this.dict = dict;

@@ -13,25 +13,38 @@ namespace VHSSD
         VHFS vhfs;
 
         Timer timerDispose;
+        Thread chucksOrdererThread;
 
         public Sync(VHFS vhfs)
         {
             this.vhfs = vhfs;
 
             timerDispose = new Timer(TimerDispose, null, 0, 1000);
+
+            chucksOrdererThread = new Thread(ChucksOrderer);
+            chucksOrdererThread.Start();
         }
 
         OrderedDictionary<long, Chuck> chucksUsage = new OrderedDictionary<long, Chuck>();
 
+        OrderedDictionary<long, DB.IterateStream> iterateStreamUsage = new OrderedDictionary<long, DB.IterateStream>();
+
         public void TimerDispose(object state)
         {
+            ///
+            /// Chucks
+            ///
             chucksUsage.Clear();
 
             foreach (var idChucks in vhfs.chucks.chucks)
             {
                 foreach (var chuck in idChucks.Value)
                 {
-                    chucksUsage.Add(chuck.Value.LastUsage, chuck.Value);
+                    try
+                    {
+                        chucksUsage.Add(chuck.Value.LastUsage, chuck.Value);
+                    }
+                    catch { }
                 }
             }
 
@@ -48,6 +61,34 @@ namespace VHSSD
                     chuck.Value.Close();
                 }
             }
+
+            ///
+            /// IterateStreams
+            ///
+            iterateStreamUsage.Clear();
+
+            foreach(var stream in vhfs.DB.iterateStreams)
+            {
+                try
+                {
+                    iterateStreamUsage.Add(stream.lastChange, stream);
+                }
+                catch { }
+            }
+
+            foreach(var stream in iterateStreamUsage.Items)
+            {
+                if (now - stream.Key > vhfs.Sets.saveIterateStreamAfter)
+                    break;
+
+                stream.Value.Save();
+            }
+        }
+
+        // Move most used and less used chucks
+        void ChucksOrderer()
+        {
+
         }
     }
 }

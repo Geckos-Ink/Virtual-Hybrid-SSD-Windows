@@ -56,6 +56,8 @@ namespace VHSSD
             public long chuckSize = 1024 * 1024; // 1 MB
             public long closeChuckAfter = 1000 * 10; // 10 seconds
             public int maxOpenedChucks = 32;
+
+            public long saveIterateStreamAfter = 1000 * 5; // 5 seconds
         }
 
         #region Drives 
