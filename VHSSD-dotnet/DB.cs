@@ -34,7 +34,7 @@ namespace VHSSD
 
         #region BytesTables 
 
-        Dictionary<int, BytesTable> bytesTables = new Dictionary<int, BytesTable>();
+        public Dictionary<int, BytesTable> bytesTables = new Dictionary<int, BytesTable>();
         BytesTable GetBytesTable(int size)
         {
             if(!bytesTables.ContainsKey(size))
@@ -43,7 +43,7 @@ namespace VHSSD
             return bytesTables[size];
         }
 
-        class BytesTable
+        public class BytesTable
         {
             DB db;
             long size;
@@ -51,8 +51,7 @@ namespace VHSSD
             List<long> freeSlots = new List<long>();
             ListStream<long> freeSlotsStream;
 
-            File fileValues;
-            File fileFreeSlots;
+            public File fileValues;
 
             public BytesTable(DB db, int size)
             {
@@ -62,7 +61,6 @@ namespace VHSSD
                 this.freeSlotsStream = new ListStream<long>(db, "bt-fs-" + size, freeSlots);
 
                 fileValues = new File(db.dir + "bt-" + size + ".bin");
-                fileFreeSlots = new File(db.dir + "bt-fs-" + size + ".bin");
             }
 
             public byte[] Get(long index)
@@ -554,7 +552,7 @@ namespace VHSSD
 
                 this.InitSaveChecker();
 
-                file = new File(db.dir + "list-" + name);
+                file = new File(db.dir + "list-" + name+".bin");
 
                 if (file.Length > 0)
                     Load();
@@ -620,7 +618,7 @@ namespace VHSSD
 
                 this.InitSaveChecker();
 
-                file = new File(db.dir + "odict-" + name);
+                file = new File(db.dir + "odict-" + name+".bin");
 
                 if (file.Length > 0)
                     Load();

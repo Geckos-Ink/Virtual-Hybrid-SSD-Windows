@@ -90,5 +90,34 @@ namespace VHSSD
         {
 
         }
+
+        ///
+        /// Close
+        ///
+
+        public bool isClosing = false;
+
+        void Close()
+        {
+            isClosing = true;
+
+            foreach(var stream in vhfs.DB.iterateStreams)
+            {
+                stream.Save();
+            }
+
+            foreach (var idChucks in vhfs.chucks.chucks)
+            {
+                foreach (var chuck in idChucks.Value)
+                {
+                    chuck.Value.Close();
+                }
+            }
+
+            foreach(var table in vhfs.DB.bytesTables)
+            {
+                table.Value.fileValues.Close();
+            }
+        }
     }
 }
