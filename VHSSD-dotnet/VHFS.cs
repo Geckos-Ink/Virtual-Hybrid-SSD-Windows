@@ -133,7 +133,7 @@ namespace VHSSD
 
                 row = vhfs.TableDrive.Get(dbRow) ?? dbRow;
 
-                MaxSize = (info.AvailableFreeSpace) / 2;
+                MaxSize = (info.TotalSize) / 2;
             }
 
             public void Close()
