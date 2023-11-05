@@ -13,7 +13,7 @@ namespace VHSSD
     {
         VHFS vhfs;
 
-        DB.Table<DB.Chuck> tableChuck;
+        public DB.Table<DB.Chuck> tableChuck;
 
         public Dictionary<long, Dictionary<long, Chuck>> chucks = new Dictionary<long, Dictionary<long, Chuck>>();
 
@@ -249,8 +249,8 @@ namespace VHSSD
                 var _row = chucks.tableChuck.Get(row, "ID,Part");
                 if (_row == null)
                 {
-                    row.SSD_ID = chucks.vhfs.GetRandomDrive(true).id;
-                    row.HDD_ID = chucks.vhfs.GetRandomDrive(false).id;
+                    row.SSD_ID = chucks.vhfs.GetBestDrive(true).id;
+                    row.HDD_ID = chucks.vhfs.GetBestDrive(false).id;
                 }
                 else
                 {

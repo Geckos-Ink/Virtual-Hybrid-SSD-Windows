@@ -1018,10 +1018,30 @@ namespace VHSSD
                 return null;
             }
 
-            public OrderedDictionary<long, List<long>> AvgKeys(string key1, string key2)
+            struct WhereMethod
+            {
+                public object value;
+                public Type.Member member;
+            }
+
+            public OrderedDictionary<long, List<long>> AvgKeys(string key1, string key2, T where = null)
             {
                 if (key1.Contains(",") || key2.Contains(","))
                     throw new Exception("Only single keys are supported");
+
+                var checkWhere = new List<WhereMethod>();
+                if(where != null)
+                {
+                    foreach(var member in type.members.Items)
+                    {
+                        var wv = member.Value.Extract(where);
+                        if (wv != null)
+                        {
+                            var wm = new WhereMethod() { value = wv, member = member.Value };
+                            checkWhere.Add(wm);
+                        }
+                    }
+                }
 
                 var ks1 = GetKey(key1);
                 var ks2 = GetKey(key2);
@@ -1044,6 +1064,13 @@ namespace VHSSD
                     foreach (var val in values)
                     {
                         var row = Get(val);
+
+                        foreach(var w in checkWhere)
+                        {
+                            var wv = w.member.Extract(row);
+                            if (wv != w.value)
+                                continue;
+                        }
 
                         var p1 = (long)type.members[key1].Extract(row);
                         var p2 = (long)type.members[key2].Extract(row);
@@ -1213,6 +1240,8 @@ namespace VHSSD
         {
             public long ID;
             public long Part;
+
+            public bool OnSSD = true; // by default, is written on SSD
 
             public short SSD_ID = -1;
             public short SSD_Version = -1;

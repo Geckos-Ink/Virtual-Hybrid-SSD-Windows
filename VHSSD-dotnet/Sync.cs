@@ -88,7 +88,31 @@ namespace VHSSD
         // Move most used and less used chucks
         void ChucksOrderer()
         {
+            while (true) {
+                ///
+                /// Free SSD
+                ///
+                var ssdToFree = new List<VHFS.Drive>();
 
+                foreach (var drive in vhfs.SSDDrives)
+                {
+                    var fs = drive.FreeSpace();
+                    if (fs > 0.75)
+                        ssdToFree.Add(drive);
+                }
+
+                if (ssdToFree.Count == 0)
+                    goto nextStep;
+
+                var hddUsages = vhfs.HDDDrives.OrderBy(d => d.lastFreeSpace);
+                var lessUsedHDD = hddUsages.First();
+
+                var where = new DB.Chuck() { OnSSD = true };
+                var orderedChucks = vhfs.chucks.tableChuck.AvgKeys("Temperature", "LastUsage");
+
+                nextStep:
+                    Thread.Sleep(10);
+            }
         }
 
         ///

@@ -82,17 +82,16 @@ namespace VHSSD
             return drive;
         }
 
-        int ssdTick = 0;
-        int hddTick = 0;
-        public Drive GetRandomDrive(bool ssd)
+        public Drive GetBestDrive(bool ssd)
         {
             List<Drive> list = ssd ? SSDDrives : HDDDrives;
-            var tick = ssd ? ssdTick++ : hddTick++;
 
-            if (ssdTick >= int.MaxValue) ssdTick = 0;
-            if (hddTick >= int.MaxValue) hddTick = 0;
+            foreach (Drive drive in list)
+                drive.FreeSpace();
 
-            return list[tick % list.Count];
+            var ordered = list.OrderBy(d => d.lastFreeSpace);
+
+            return ordered.First();
         }
 
         public class Drive
@@ -141,9 +140,11 @@ namespace VHSSD
                 vhfs.TableDrive.Set(row);
             }
 
+            public double lastFreeSpace = 0;
             public double FreeSpace()
             {
-                return (double)info.TotalFreeSpace / (double)info.TotalSize;
+                lastFreeSpace = (double) row.UsedBytes / MaxSize;
+                return lastFreeSpace;
             }
 
             #region Stats
