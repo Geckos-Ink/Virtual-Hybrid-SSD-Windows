@@ -113,6 +113,9 @@ namespace VHSSD
 
         public void Delete()
         {
+            if(drive != null)
+                drive.row.UsedBytes -= Length;
+
             Close();
             System.IO.File.Delete(FileName);
         }
