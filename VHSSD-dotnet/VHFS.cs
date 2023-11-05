@@ -87,11 +87,11 @@ namespace VHSSD
             List<Drive> list = ssd ? SSDDrives : HDDDrives;
 
             foreach (Drive drive in list)
-                drive.FreeSpace();
+                drive.UsedSpace();
 
-            var ordered = list.OrderBy(d => d.lastFreeSpace);
+            var ordered = list.OrderBy(d => d.lastUsedSpace);
 
-            return ordered.First();
+            return ordered.Last();
         }
 
         public class Drive
@@ -140,11 +140,11 @@ namespace VHSSD
                 vhfs.TableDrive.Set(row);
             }
 
-            public double lastFreeSpace = 0;
-            public double FreeSpace()
+            public double lastUsedSpace = 0;
+            public double UsedSpace()
             {
-                lastFreeSpace = (double) row.UsedBytes / MaxSize;
-                return lastFreeSpace;
+                lastUsedSpace = (double) row.UsedBytes / MaxSize;
+                return lastUsedSpace;
             }
 
             #region Stats

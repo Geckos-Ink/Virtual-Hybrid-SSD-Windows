@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -86,29 +87,42 @@ namespace VHSSD
         }
 
         // Move most used and less used chucks
+        const int maxMovingCycles = 25;
+        const double maxSsdUsedSpace = 0.75;
+
         void ChucksOrderer()
         {
             while (true) {
                 ///
                 /// Free SSD
                 ///
-                var ssdToFree = new List<VHFS.Drive>();
+                var ssdsToFree = new List<VHFS.Drive>();
 
                 foreach (var drive in vhfs.SSDDrives)
                 {
-                    var fs = drive.FreeSpace();
-                    if (fs > 0.75)
-                        ssdToFree.Add(drive);
+                    var fs = drive.UsedSpace();
+                    if (fs > maxSsdUsedSpace)
+                        ssdsToFree.Add(drive);
                 }
 
-                if (ssdToFree.Count == 0)
+                if (ssdsToFree.Count == 0)
                     goto nextStep;
 
-                var hddUsages = vhfs.HDDDrives.OrderBy(d => d.lastFreeSpace);
-                var lessUsedHDD = hddUsages.First();
+                var ssdToFree = ssdsToFree.OrderBy(d => d.lastUsedSpace).First();
 
-                var where = new DB.Chuck() { OnSSD = true };
-                var orderedChucks = vhfs.chucks.tableChuck.AvgKeys("Temperature", "LastUsage");
+                // Break the glass in case of necessity
+                //var hddUsages = vhfs.HDDDrives.OrderBy(d => d.lastUsedSpace);
+                //var lessUsedHDD = hddUsages.Last();
+
+                var where = new DB.Chuck() { OnSSD = true, SSD_ID = ssdToFree.id };
+                var orderedChucks = vhfs.chucks.tableChuck.AvgKeys("Temperature", "LastUsage", where);
+
+                var cycles = 0;
+                while(cycles < maxMovingCycles && ssdToFree.UsedSpace() > maxSsdUsedSpace)
+                {
+                    //...
+                    cycles++;
+                }
 
                 nextStep:
                     Thread.Sleep(10);
