@@ -59,6 +59,9 @@ namespace VHSSD
                     if (diff < vhfs.Sets.closeChuckAfter)
                         break;
 
+                    if (chuck.Value.onExchange)
+                        continue;
+
                     chuck.Value.Close();
                 }
             }
@@ -120,7 +123,20 @@ namespace VHSSD
                 var cycles = 0;
                 while(cycles < maxMovingCycles && ssdToFree.UsedSpace() > maxSsdUsedSpace)
                 {
-                    //...
+                    var indexes = orderedChucks.Items[cycles].Value;
+
+                    // Yep, it doesn't count the cycles. This is the "Italian way"
+                    foreach(var index in indexes) {
+                        var row = vhfs.chucks.tableChuck.Get(index);
+                        var chuck = vhfs.chucks.GetChuck(row);
+
+                        // For the moment, in case of using instance, just ignore it
+                        if (chuck.inUsing)
+                            continue;
+
+                        chuck.onExchange = true;
+                    }
+
                     cycles++;
                 }
 

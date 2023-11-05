@@ -63,7 +63,7 @@ namespace VHSSD
             return parts.ToArray();
         }
 
-        public Chuck GetChuck(long id, long part)
+        public Chuck GetChuck(long id, long part, DB.Chuck row = null)
         {
             Dictionary<long, Chuck> idChucks;
 
@@ -76,11 +76,16 @@ namespace VHSSD
             Chuck chuck;
             if(!idChucks.TryGetValue(part, out chuck))
             {
-                chuck = new Chuck(this, id, part);
+                chuck = new Chuck(this, id, part, row);
                 idChucks[part] = chuck;
             }
 
             return chuck;
+        }
+
+        public Chuck GetChuck(DB.Chuck row)
+        {
+            return GetChuck(row.ID, row.Part, row);
         }
 
         public void RemoveChuck(long id, long part)
@@ -161,6 +166,7 @@ namespace VHSSD
             foreach (var part in parts)
             {
                 var chuck = GetChuck(ID, part.part);
+                chuck.inUsing = true;
                 var res = chuck.Read(part);
                 res.CopyTo(bytes, part.resPos);
 
@@ -178,6 +184,7 @@ namespace VHSSD
                 var bb = new byte[part.length];
                 Array.Copy(bytes, part.resPos, bb, part.pos, part.length);
                 var chuck = GetChuck(ID, part.part);
+                chuck.inUsing = true;
                 chuck.Write(part, bb);
             }
         }
@@ -207,7 +214,12 @@ namespace VHSSD
 
             byte[] data;
 
-            public Chuck(Chucks chucks, long id, long part)
+            // Operations
+            public bool onExchange = false;
+            public bool inUsing = false;
+            public bool inWrite = false; // during this instance was performed at least a write operation
+
+            public Chuck(Chucks chucks, long id, long part, DB.Chuck row = null)
             {
                 this.chucks = chucks;
 
@@ -215,7 +227,10 @@ namespace VHSSD
                 row.ID = id;
                 row.Part = part;
 
-                LoadRow();
+                if (row != null)
+                    this.row = row;
+                else
+                    LoadRow();
 
                 LastUsage = Static.UnixTimeMS;
             }
@@ -368,6 +383,7 @@ namespace VHSSD
             public void Write(Part part, byte[] bytes)
             {
                 InOperation = true;
+                inWrite = true;
 
                 var file = BestDrive();
                 file.Write(bytes, part.pos);
@@ -400,6 +416,28 @@ namespace VHSSD
                         fileHDD.Delete();
                 }
             }
+
+            #region Sync
+
+            public void SyncVersion()
+            {
+                bool moveToHdd = row.SSD_Version > row.HDD_Version;
+
+                File from = fileHDD;
+                File to = fileSSD; 
+
+                if (moveToHdd)
+                {
+                    from = fileSSD;
+                    to = fileSSD;
+                }
+
+                from.CopyTo(to);
+
+                row.SSD_Version = row.HDD_Version = 0; 
+            }
+
+            #endregion
         }
     }
 }

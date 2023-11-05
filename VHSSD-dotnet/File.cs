@@ -13,7 +13,11 @@ namespace VHSSD
     {
         public VHFS.Drive drive;
 
-        public string fileName;
+        /// <summary>
+        /// Full path of the file
+        /// </summary>
+        public string FileName; 
+
         public FileStream stream;
 
         long openingLength = 0;
@@ -21,17 +25,25 @@ namespace VHSSD
         public File(string fileName, VHFS.Drive drive=null)
         {
             this.drive = drive;
+            this.FileName = fileName;
+        }
 
-            this.fileName = fileName;
-            stream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+        void checkStream()
+        {
+            if(stream == null)
+            {
+                stream = new FileStream(FileName, FileMode.OpenOrCreate, FileAccess.ReadWrite);
 
-            openingLength = Length;
+                openingLength = Length;
 
-            if(drive != null) drive.OpenFiles++;
+                if (drive != null) drive.OpenFiles++;
+            }
         }
 
         public void Write(byte[] data, long pos = -1)
         {
+            checkStream();
+
             bool resize = pos == -1;
             if (resize) pos = 0;
 
@@ -48,6 +60,8 @@ namespace VHSSD
 
         public byte[] Read(long len = 0, long pos = 0)
         {
+            checkStream();
+
             bool allFile = len == 0;
             if (allFile) len = stream.Length;
 
@@ -64,7 +78,10 @@ namespace VHSSD
         }
 
         public long Length {
-            get { return stream.Length; } 
+            get {
+                checkStream();
+                return stream.Length; 
+            } 
         
             set
             {
@@ -74,12 +91,13 @@ namespace VHSSD
 
         public void Flush()
         {
-            stream.Flush();
+            if(stream != null)
+                stream.Flush();
         }
 
         public void Close()
         {
-            if (stream.CanRead)
+            if (stream != null && stream.CanRead)
             {
                 Flush();
                 stream.Close();
@@ -95,7 +113,26 @@ namespace VHSSD
         public void Delete()
         {
             Close();
-            System.IO.File.Delete(fileName);
+            System.IO.File.Delete(FileName);
+        }
+
+        public void CopyTo(File To)
+        {
+            byte[] buffer = new byte[4096];
+            long bytesRead = 0;
+
+            // Read from the source file and write to the destination file in chunks
+            while (bytesRead < Length)
+            {
+                var until = buffer.LongLength + bytesRead;
+                if (until > Length)
+                    until = Length;
+
+                buffer = Read(buffer.LongLength, bytesRead);
+                To.Write(buffer, bytesRead);
+
+                bytesRead = until;
+            }
         }
     }
 }
