@@ -74,7 +74,7 @@ namespace VHSSD
             return insertionOrder.Last();
         }
 
-        public int IndexOf(TKey key)
+        public int IndexOfKey(TKey key)
         {
             var pos = InsertAt(key);
 
@@ -86,6 +86,24 @@ namespace VHSSD
                 return pos;
 
             return -1;
+        }
+
+        // Horrible implementation (which require not-so-much memory footprint) - probably unused
+        public TKey IndexOf(TValue value)
+        {
+            foreach(var kv in insertionOrder)
+            {
+                if(kv.Value.Equals(value))
+                    return kv.Key;
+            }
+
+            try
+            {
+                return (TKey)Convert.ChangeType(-1, typeof(TKey));
+            }
+            catch { }
+
+            return default(TKey);
         }
 
         public int InsertAt(TKey key)
@@ -140,7 +158,7 @@ namespace VHSSD
                 if (dictionary.ContainsKey(key))
                 {
                     dictionary[key] = value;
-                    insertionOrder[IndexOf(key)] = new KeyValuePair<TKey, TValue>(key, value);
+                    insertionOrder[IndexOfKey(key)] = new KeyValuePair<TKey, TValue>(key, value);
                 }
                 else
                 {
@@ -149,7 +167,7 @@ namespace VHSSD
             }
         }
 
-        public IEnumerable<KeyValuePair<TKey, TValue>> Items
+        public List<KeyValuePair<TKey, TValue>> Items
         {
             get { return insertionOrder; }
         }

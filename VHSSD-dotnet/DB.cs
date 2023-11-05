@@ -906,11 +906,11 @@ namespace VHSSD
                     return allKeys.FirstOrDefault();
                 }
 
-                public long[] GetAll(T row)
+                public List<long> GetAll(T row)
                 {
                     var keysStack = new List<OrderedKeys<long>>() { Keys };
 
-                    long[] nextKeys = null;
+                    List<long> nextKeys = null;
 
                     for (int r = 0; r < Relation.Length; r++)
                     {
@@ -918,7 +918,7 @@ namespace VHSSD
 
                         if (keysStack.Count <= r)
                         {
-                            if (nextKeys == null || nextKeys.Length == 0)
+                            if (nextKeys == null || nextKeys.Count == 0)
                                 return null;
 
                             var nk = new OrderedKeys<long>(table.db, prefix + "-" + path + "-" + nextKeys.First().ToString("X"));
@@ -1005,6 +1005,8 @@ namespace VHSSD
 
             public Key GetKey(string relation)
             {
+                relation = relation?.Replace(" ", "");
+
                 foreach (var key in Keys)
                 {
                     if (relation == null || key.name == relation)
@@ -1014,6 +1016,51 @@ namespace VHSSD
                 }
 
                 return null;
+            }
+
+            public OrderedDictionary<long, List<long>> AvgKeys(string key1, string key2)
+            {
+                if (key1.Contains(",") || key2.Contains(","))
+                    throw new Exception("Only single keys are supported");
+
+                var ks1 = GetKey(key1);
+                var ks2 = GetKey(key2);
+
+                var kks1 = ks1.Keys.keys;
+                var kks2 = ks2.Keys.keys;
+
+                var min1 = kks1.Items.First().Key;
+                var min2 = kks2.Items.First().Key;
+                var max1 = kks1.Items.Last().Key;
+                var max2 = kks2.Items.Last().Key;
+
+                OrderedDictionary<long, List<long>> orderedKeys = new OrderedDictionary<long, List<long>>();
+
+                var nkeys = kks1.Items.Count();
+                for(int i= 0; i < nkeys; i++)
+                {
+                    var values = kks1.Items[i].Value;
+
+                    foreach (var val in values)
+                    {
+                        var row = Get(val);
+
+                        var p1 = (long)type.members[key1].Extract(row);
+                        var p2 = (long)type.members[key2].Extract(row);
+
+                        var k1 = (double)(p1 - min1) / (max1 - min1) * long.MaxValue;
+                        var k2 = (double)(p2 - min2) / (max2 - min2) * long.MaxValue;
+
+                        var avg = (long)((k1 + k2) / 2);
+
+                        if (orderedKeys.Has(avg))
+                            orderedKeys[avg].Add(val);
+                        else
+                            orderedKeys.Add(avg, new List<long> { val });
+                    }
+                }
+
+                return orderedKeys;
             }
 
             #endregion
@@ -1034,13 +1081,11 @@ namespace VHSSD
                 return index;
             }
 
-            public long[] GetAllIndex(T row, string relation = null)
+            public List<long> GetAllIndex(T row, string relation = null)
             {
                 CheckKey();
 
-                relation = relation?.Replace(" ", "");
-
-                long[] indexes = null;
+                List<long> indexes = null;
                 var key = GetKey(relation);
 
                 if(key != null)
@@ -1053,7 +1098,7 @@ namespace VHSSD
             {
                 var indexes = GetAllIndex(row, relation);
 
-                if(indexes.Length == 0) return -1;
+                if(indexes.Count == 0) return -1;
 
                 if(row.AbsIndex >= 0)
                 {
