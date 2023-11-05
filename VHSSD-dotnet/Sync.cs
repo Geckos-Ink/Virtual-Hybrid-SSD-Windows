@@ -59,10 +59,11 @@ namespace VHSSD
                     if (diff < vhfs.Sets.closeChuckAfter)
                         break;
 
-                    if (chuck.Value.onExchange)
+                    var cv = chuck.Value;
+                    if (cv.InOperation || cv.onExchange)
                         continue;
 
-                    chuck.Value.Close();
+                    cv.Close();
                 }
             }
 
@@ -135,6 +136,8 @@ namespace VHSSD
                             continue;
 
                         chuck.onExchange = true;
+                        chuck.MoveToHDD();
+                        chuck.onExchange = false;
                     }
 
                     cycles++;

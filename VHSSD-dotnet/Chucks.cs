@@ -437,6 +437,16 @@ namespace VHSSD
                 row.SSD_Version = row.HDD_Version = 0; 
             }
 
+            public void MoveToHDD()
+            {
+                SyncVersion();
+
+                fileSSD.Delete();
+
+                row.SSD_Version = -1;
+                row.OnSSD = false;
+            }
+
             #endregion
         }
     }

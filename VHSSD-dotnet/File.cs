@@ -99,14 +99,15 @@ namespace VHSSD
         {
             if (stream != null && stream.CanRead)
             {
-                Flush();
-                stream.Close();
-
                 if (drive != null)
                 {
                     drive.OpenFiles--;
                     drive.row.UsedBytes += Length - openingLength;
                 }
+
+                Flush();
+                stream.Close();
+                stream = null;
             }
         }
 
@@ -118,7 +119,10 @@ namespace VHSSD
 
         public void CopyTo(File To)
         {
-            byte[] buffer = new byte[4096];
+            //todo: Check for To's drive allocation size
+            var bSize = 4096;
+
+            byte[] buffer = new byte[bSize];
             long bytesRead = 0;
 
             // Read from the source file and write to the destination file in chunks
