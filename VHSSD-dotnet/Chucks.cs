@@ -284,13 +284,14 @@ namespace VHSSD
 
                 if(fileSSD == null && row.SSD_ID >= 0)
                 {
-                    var drive = chucks.vhfs.SSDDrives[row.SSD_ID];
+                    var drive = chucks.vhfs.AllDrives[row.SSD_ID];
                     fileSSD = new File(drive.Dir + chuckName, drive);
                 }
 
+                // in this moment the chuck is always present on HDD
                 if(row.SSD_ID < 0 || all || !SSDUpdated())
                 {
-                    var drive = chucks.vhfs.HDDDrives[row.HDD_ID];
+                    var drive = chucks.vhfs.AllDrives[row.HDD_ID];
                     fileHDD = new File(drive.Dir + chuckName, drive);
                 }
             }
