@@ -15,6 +15,7 @@ using Fsp;
 using VolumeInfo = Fsp.Interop.VolumeInfo;
 using FileInfo = Fsp.Interop.FileInfo;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace VHSSD
 {
@@ -735,6 +736,13 @@ namespace VHSSD
                 MountPoint = Host.MountPoint();
                 _Host = Host;
 
+
+                Console.WriteLine("Press Enter to close the program...");
+
+                while (Console.ReadKey().Key != ConsoleKey.Enter)
+                    Thread.Sleep(1);
+
+                this.Stop();
 
                 return;
 
