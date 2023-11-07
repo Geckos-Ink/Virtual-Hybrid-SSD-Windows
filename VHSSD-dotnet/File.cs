@@ -132,6 +132,8 @@ namespace VHSSD
 
         public void CopyTo(File To)
         {
+            var toStartLength = To.Length;
+
             //todo: Check for To's drive allocation size
             var bSize = 4096;
 
@@ -149,6 +151,13 @@ namespace VHSSD
                 To.Write(buffer, bytesRead);
 
                 bytesRead = until;
+            }
+
+            var drive = To.drive;
+            if(drive != null)
+            {
+                drive.row.UsedBytes -= toStartLength;
+                drive.row.UsedBytes += To.Length;
             }
         }
 

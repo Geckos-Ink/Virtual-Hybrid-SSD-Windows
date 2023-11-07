@@ -439,7 +439,13 @@ namespace VHSSD
             public void Resize(long length)
             {
                 var file = MainFile();
+
+                file.drive.row.UsedBytes -= file.Length;
+                file.drive.row.UsedBytes += length;
+
                 file.Length = length;
+
+                IncreaseVersion();
             }
 
             public void Delete()
