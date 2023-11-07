@@ -227,12 +227,13 @@ namespace VHSSD
                     if (!type.IsArray) {
                         if (type.IsValueType)
                         {
+                            isValue = true;
+
                             // Better to obtain the size empirically
                             var def = Activator.CreateInstance(type);
                             var bytes = ObjToBytes(def);
 
                             size = bytes.Length; // Marshal.SizeOf(type);
-                            isValue = true;
                         }
                         else
                             throw new Exception("What is das?");
@@ -282,6 +283,9 @@ namespace VHSSD
 
                 if (isValue)
                 {
+                    if(type ==  typeof(byte))
+                        return BitConverter.GetBytes((byte)obj);
+
                     if (type == typeof(char))
                         return BitConverter.GetBytes((char)obj);
 
