@@ -463,7 +463,13 @@ namespace VHSSD
 
             public void Flush()
             {
-                //todo
+                if (!vhfs.chucks.chucks.ContainsKey(ID))
+                    return;
+
+                foreach(var chuck in vhfs.chucks.chucks[ID])
+                {
+                    chuck.Value.Flush();
+                }
             }
 
             #endregion

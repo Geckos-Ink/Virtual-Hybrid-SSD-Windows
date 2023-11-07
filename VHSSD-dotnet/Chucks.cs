@@ -451,6 +451,15 @@ namespace VHSSD
                     GetHDD().Delete();
             }
 
+            public void Flush()
+            {
+                if (fileHDD != null)
+                    fileHDD.Flush();
+
+                if (fileSSD != null)
+                    fileSSD.Flush();
+            }
+
             #region Sync
 
             public void SyncVersion()

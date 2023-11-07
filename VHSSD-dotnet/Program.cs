@@ -2,21 +2,7 @@
  * @file Program.cs
  *
  * @copyright 2015-2022 Bill Zissimopoulos
- */
-/*
- * This file is part of WinFsp.
- *
- * You can redistribute it and/or modify it under the terms of the GNU
- * General Public License version 3 as published by the Free Software
- * Foundation.
- *
- * Licensees holding a valid commercial license may use this software
- * in accordance with the commercial license agreement provided in
- * conjunction with the software.  The terms and conditions of any such
- * commercial license agreement shall govern, supersede, and render
- * ineffective any application of the GPLv3 license to this software,
- * notwithstanding of any reference thereto in the software or
- * associated repository.
+ * @copyright 2023      Riccardo Cecchini
  */
 
 using System;
@@ -328,7 +314,7 @@ namespace VHSSD
             Host.PostCleanupWhenModifiedOnly = true;
             Host.PassQueryDirectoryPattern = true;
             Host.FlushAndPurgeOnCleanup = true;
-            Host.VolumeCreationTime = (UInt64)File.GetCreationTimeUtc(_Path).ToFileTimeUtc();
+            Host.VolumeCreationTime = (ulong) DateTime.Now.ToFileTimeUtc(); 
             Host.VolumeSerialNumber = 0;
             return STATUS_SUCCESS;
         }
@@ -337,24 +323,10 @@ namespace VHSSD
         {
             VolumeInfo = default(VolumeInfo);
 
+            //todo
             VolumeInfo.TotalSize = (ulong)1024 * 1024 * 1024 * 100;
             VolumeInfo.FreeSize = VolumeInfo.TotalSize;
 
-            return STATUS_SUCCESS;
-
-            try
-            {
-                DriveInfo Info = new DriveInfo(_Path);
-                VolumeInfo.TotalSize = (UInt64)Info.TotalSize;
-                VolumeInfo.FreeSize = (UInt64)Info.TotalFreeSpace;
-            }
-            catch (ArgumentException)
-            {
-                /*
-                 * DriveInfo only supports drives and does not support UNC paths.
-                 * It would be better to use GetDiskFreeSpaceEx here.
-                 */
-            }
             return STATUS_SUCCESS;
         }
         public override Int32 GetSecurityByName(
@@ -475,6 +447,7 @@ namespace VHSSD
             FileDesc.Stream.SetLength(0);
             return FileDesc.GetFileInfo(out FileInfo);
         }
+
         public override void Cleanup(
             Object FileNode,
             Object FileDesc0,
@@ -487,17 +460,8 @@ namespace VHSSD
             {
                 file.Remove();   
             }
-
-            return;
-
-            FileDesc FileDesc = (FileDesc)FileDesc0;
-            if (0 != (Flags & CleanupDelete))
-            {
-                FileDesc.SetDisposition(true);
-                if (null != FileDesc.Stream)
-                    FileDesc.Stream.Dispose();
-            }
         }
+
         public override void Close(
             Object FileNode,
             Object FileDesc0)
@@ -505,6 +469,7 @@ namespace VHSSD
             var file = (VHFS.File)FileDesc0;
             file.Dispose();
         }
+
         public override Int32 Read(
             Object FileNode,
             Object FileDesc0,
@@ -539,28 +504,9 @@ namespace VHSSD
             file.Write(Buffer, Offset, Length, WriteToEndOfFile, ConstrainedIo, out PBytesTransferred, out FileInfo);
 
             return STATUS_SUCCESS;
-                
-
-            FileDesc FileDesc = (FileDesc)FileDesc0;
-            if (ConstrainedIo)
-            {
-                if (Offset >= (UInt64)FileDesc.Stream.Length)
-                {
-                    PBytesTransferred = default(UInt32);
-                    FileInfo = default(FileInfo);
-                    return STATUS_SUCCESS;
-                }
-                if (Offset + Length > (UInt64)FileDesc.Stream.Length)
-                    Length = (UInt32)((UInt64)FileDesc.Stream.Length - Offset);
-            }
-            Byte[] Bytes = new byte[Length];
-            Marshal.Copy(Buffer, Bytes, 0, Bytes.Length);
-            if (!WriteToEndOfFile)
-                FileDesc.Stream.Seek((Int64)Offset, SeekOrigin.Begin);
-            FileDesc.Stream.Write(Bytes, 0, Bytes.Length);
-            PBytesTransferred = (UInt32)Bytes.Length;
-            return FileDesc.GetFileInfo(out FileInfo);
+              
         }
+
         public override Int32 Flush(
             Object FileNode,
             Object FileDesc0,
@@ -570,17 +516,8 @@ namespace VHSSD
             file.Flush();
             FileInfo = file.GetFileInfo();
             return STATUS_SUCCESS;
-
-            FileDesc FileDesc = (FileDesc)FileDesc0;
-            if (null == FileDesc)
-            {
-                /* we do not flush the whole volume, so just return SUCCESS */
-                FileInfo = default(FileInfo);
-                return STATUS_SUCCESS;
-            }
-            FileDesc.Stream.Flush(true);
-            return FileDesc.GetFileInfo(out FileInfo);
         }
+
         public override Int32 GetFileInfo(
             Object FileNode,
             Object FileDesc0,
@@ -590,6 +527,7 @@ namespace VHSSD
             FileInfo = file.GetFileInfo();
             return STATUS_SUCCESS;
         }
+
         public override Int32 SetBasicInfo(
             Object FileNode,
             Object FileDesc0,
@@ -611,11 +549,8 @@ namespace VHSSD
             FileInfo = file.GetFileInfo();
 
             return STATUS_SUCCESS;
-
-            FileDesc FileDesc = (FileDesc)FileDesc0;
-            FileDesc.SetBasicInfo(FileAttributes, CreationTime, LastAccessTime, LastWriteTime);
-            return FileDesc.GetFileInfo(out FileInfo);
         }
+
         public override Int32 SetFileSize(
             Object FileNode,
             Object FileDesc0,
@@ -629,19 +564,8 @@ namespace VHSSD
             FileInfo = file.GetFileInfo();
 
             return STATUS_SUCCESS;
-
-            FileDesc FileDesc = (FileDesc)FileDesc0;
-            if (!SetAllocationSize || (UInt64)FileDesc.Stream.Length > NewSize)
-            {
-                /*
-                 * "FileInfo.FileSize > NewSize" explanation:
-                 * Ptfs does not support allocation size. However if the new AllocationSize
-                 * is less than the current FileSize we must truncate the file.
-                 */
-                FileDesc.Stream.SetLength((Int64)NewSize);
-            }
-            return FileDesc.GetFileInfo(out FileInfo);
         }
+
         public override Int32 CanDelete(
             Object FileNode,
             Object FileDesc0,
@@ -654,6 +578,7 @@ namespace VHSSD
 
             return STATUS_SUCCESS;
         }
+
         public override Int32 Rename(
             Object FileNode,
             Object FileDesc0,
@@ -756,57 +681,6 @@ namespace VHSSD
             FileInfo = default(FileInfo);
             return false;
 
-            FileDesc FileDesc = (FileDesc)FileDesc0;
-            if (null == FileDesc.FileSystemInfos)
-            {
-                if (null != Pattern)
-                    Pattern = Pattern.Replace('<', '*').Replace('>', '?').Replace('"', '.');
-                else
-                    Pattern = "*";
-                IEnumerable Enum = FileDesc.DirInfo.EnumerateFileSystemInfos(Pattern);
-                SortedList List = new SortedList();
-                if (null != FileDesc.DirInfo && null != FileDesc.DirInfo.Parent)
-                {
-                    List.Add(".", FileDesc.DirInfo);
-                    List.Add("..", FileDesc.DirInfo.Parent);
-                }
-                foreach (FileSystemInfo Info in Enum)
-                    List.Add(Info.Name, Info);
-                FileDesc.FileSystemInfos = new DictionaryEntry[List.Count];
-                List.CopyTo(FileDesc.FileSystemInfos, 0);
-            }
-            int Index;
-            if (null == Context)
-            {
-                Index = 0;
-                if (null != Marker)
-                {
-                    Index = Array.BinarySearch(FileDesc.FileSystemInfos,
-                        new DictionaryEntry(Marker, null),
-                        _DirectoryEntryComparer);
-                    if (0 <= Index)
-                        Index++;
-                    else
-                        Index = ~Index;
-                }
-            }
-            else
-                Index = (int)Context;
-            if (FileDesc.FileSystemInfos.Length > Index)
-            {
-                Context = Index + 1;
-                FileName = (String)FileDesc.FileSystemInfos[Index].Key;
-                FileDesc.GetFileInfoFromFileSystemInfo(
-                    (FileSystemInfo)FileDesc.FileSystemInfos[Index].Value,
-                    out FileInfo);
-                return true;
-            }
-            else
-            {
-                FileName = default(String);
-                FileInfo = default(FileInfo);
-                return false;
-            }
         }
 
         private String _Path;
@@ -848,6 +722,9 @@ namespace VHSSD
                 VolumePrefix = "\\vhfs\\test";
 
                 var vhfs = new VHFS();
+
+                vhfs.AddDrive("C", true);
+                vhfs.AddDrive("E", false);
 
                 Host = new FileSystemHost(Ptfs = new Ptfs(vhfs));
                 Host.Prefix = VolumePrefix;
