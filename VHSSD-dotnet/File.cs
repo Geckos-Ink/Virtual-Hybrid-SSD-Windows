@@ -142,4 +142,24 @@ namespace VHSSD
             }
         }
     }
+
+    /// <summary>
+    /// This class is used when is necessary to write to an unloaded file
+    /// </summary>
+    public class RamFile
+    {
+        public List<Piece> Pieces = new List<Piece>();
+
+        public void Write(byte[] data, long pos)
+        {
+            var piece = new Piece() { Pos = pos, Data = data };
+            Pieces.Add(piece);
+        }
+
+        public struct Piece
+        {
+            public long Pos;
+            public byte[] Data;
+        }
+    }
 }

@@ -212,7 +212,7 @@ namespace VHSSD
 
             bool onHDD = false;
 
-            byte[] data;
+            RamFile ramFile = new RamFile();
 
             // Operations
             public bool onExchange = false;
@@ -286,6 +286,7 @@ namespace VHSSD
                 {
                     var drive = chucks.vhfs.AllDrives[row.SSD_ID];
                     fileSSD = new File(drive.Dir + chuckName, drive);
+                    onHDD = false;
                 }
 
                 // in this moment the chuck is always present on HDD
@@ -293,6 +294,7 @@ namespace VHSSD
                 {
                     var drive = chucks.vhfs.AllDrives[row.HDD_ID];
                     fileHDD = new File(drive.Dir + chuckName, drive);
+                    onHDD = true;
                 }
             }
 
@@ -387,7 +389,11 @@ namespace VHSSD
                 inWrite = true;
 
                 var file = BestDrive();
-                file.Write(bytes, part.pos);
+
+                if (onHDD)
+                    ramFile.Write(bytes, part.pos);
+                else 
+                    file.Write(bytes, part.pos);
 
                 row.LastWrite = CalculateAvgUsage();
                 
