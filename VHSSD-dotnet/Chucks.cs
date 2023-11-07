@@ -354,6 +354,8 @@ namespace VHSSD
 
                 if (!onHDD && !SSDGreater())
                     row.SSD_Version += 1;
+
+                row.OnSSD = !onHDD;
             }
 
             public long CalculateAvgUsage()
@@ -413,13 +415,15 @@ namespace VHSSD
                     if (part.pos == 0 && file.Length == part.length)
                     {
                         file = GetSSD();
-                        onHDD = false;
                     }
                     else
                     {
                         ramFile.Write(bytes, part.pos);
                         writeToFile = false;
                     }
+
+                    // Write the file on SSD
+                    onHDD = false;
                 }
                 
                 if(writeToFile)
@@ -453,8 +457,11 @@ namespace VHSSD
             {
                 bool moveToHdd = row.SSD_Version > row.HDD_Version;
 
-                File from = fileHDD;
-                File to = fileSSD; 
+                if (moveToHdd && row.SSD_Version == row.HDD_Version)
+                    return;
+
+                File from = GetHDD();
+                File to = GetSSD(); 
 
                 if (moveToHdd)
                 {
@@ -477,6 +484,15 @@ namespace VHSSD
 
                 row.SSD_Version = -1;
                 row.OnSSD = false;
+            }
+
+            public void MoveToSSD(VHFS.Drive SSD = null)
+            {
+                if(SSD != null)
+                    row.SSD_ID = SSD.id;
+
+                SyncVersion();
+                row.OnSSD = true;
             }
 
             #endregion

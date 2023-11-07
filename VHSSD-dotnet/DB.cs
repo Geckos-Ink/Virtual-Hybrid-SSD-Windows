@@ -537,6 +537,32 @@ namespace VHSSD
             {
                 stream.file.Delete();
             }
+
+            #region Math 
+
+            public T Min()
+            {
+                return keys.Items.First().Key;
+            }
+
+            public T Max()
+            {
+                return keys.Items.Last().Key;
+            }
+
+            public T Avg()
+            {
+                double res = 0;
+
+                foreach (var item in keys.Items)
+                    res += (dynamic)item.Key;
+
+                res /= keys.Items.Count;
+
+                return (dynamic)res;
+            }
+
+            #endregion
         }
 
         #endregion
@@ -805,6 +831,14 @@ namespace VHSSD
                 {
                     Keys.stream.Save();
                     CloseOKs(true);
+                }
+
+                public OrderedKeys<long> GetOrderedKeys()
+                {
+                    if (Relation.Length != 1)
+                        throw new Exception("GetOrderedKeys compatible only with unique key");
+
+                    return openOKs.First().Value;
                 }
 
                 #region OpenedKeyManager

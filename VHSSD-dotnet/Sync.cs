@@ -110,7 +110,7 @@ namespace VHSSD
                 }
 
                 if (ssdsToFree.Count == 0)
-                    goto nextStep;
+                    goto nextStep0;
 
                 var ssdToFree = ssdsToFree.OrderBy(d => d.lastUsedSpace).First();
 
@@ -143,8 +143,53 @@ namespace VHSSD
                     cycles++;
                 }
 
-                nextStep:
-                    Thread.Sleep(10);
+                nextStep0:
+                ///
+                /// Move warmer files to SSD
+                ///
+                var mostFreeSsdsList = new List<VHFS.Drive>();
+
+                foreach (var drive in vhfs.SSDDrives)
+                {
+                    var fs = drive.UsedSpace();
+                    if(fs < 0.75)
+                        mostFreeSsdsList.Add(drive);
+                }
+
+                var mostFree = mostFreeSsdsList.OrderByDescending(d => d.lastUsedSpace).ToList();
+                var warmerChucks = vhfs.chucks.tableChuck.AvgKeys("Temperature", "LastUsage");
+
+                var keyTemperature = vhfs.chucks.tableChuck.GetKey("Temperature").GetOrderedKeys();
+                var avgTemp = keyTemperature.Avg();
+
+                var tick = 0;
+                cycles = 0; // little bit confusing? but i'm a really confusing. 
+                while(cycles < maxMovingCycles && tick < warmerChucks.Items.Count && mostFree.Count() > 0)
+                {
+                    var indexes = warmerChucks.Items[warmerChucks.Items.Count - (1+tick)];
+                    
+                    foreach(var index in indexes.Value)
+                    {
+                        var row = vhfs.chucks.tableChuck.Get(index);
+                        if (row.OnSSD) continue;
+
+                        if (row.Temperature < avgTemp) continue;
+
+                        var chuck = vhfs.chucks.GetChuck(row);
+                        if (chuck.inUsing) continue;
+
+                        var ssd = mostFree[cycles % mostFree.Count];
+                        chuck.MoveToSSD();
+
+                        cycles++;
+                    }
+
+                    tick++;
+                }
+
+                nextStep1:
+                // Wait (a little) for it...
+                Thread.Sleep(10);
             }
         }
 
