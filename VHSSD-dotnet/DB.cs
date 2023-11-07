@@ -767,9 +767,10 @@ namespace VHSSD
             public Table(DB db, string ctx="")
             {
                 this.db = db;
-                this.ctx = type.name + (String.IsNullOrEmpty(ctx) ? "" : "-" + ctx);
 
                 type = db.GetType(typeof(T));
+
+                this.ctx = type.name + (String.IsNullOrEmpty(ctx) ? "" : "-" + ctx);
 
                 RowSize = type.size;
                 bytesTable = db.GetBytesTable(RowSize);
