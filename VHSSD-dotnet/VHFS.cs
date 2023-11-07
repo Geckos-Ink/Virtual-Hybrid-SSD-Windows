@@ -249,7 +249,7 @@ namespace VHSSD
 
             public long ID;
 
-            public string name;
+            public string name = "";
             public File parent;
             public bool isDirectory;
 
@@ -345,19 +345,24 @@ namespace VHSSD
             {
                 if (isDirectory && !loadedFiles)
                 {
-                    foreach (var fid in lastFS.Files)
+                    if (lastFS != null)
                     {
-                        var file = new File(fid, this.vhfs, this);
-                        file.Load(true);
-                        files.Set(file.name, file);
+                        foreach (var fid in lastFS.Files)
+                        {
+                            var file = new File(fid, this.vhfs, this);
+                            file.Load(true);
+                            files.Set(file.name, file);
+                        }
                     }
                 }
 
                 loadedFiles = true;
             }
 
+            // Pretty useless vars
             long lastSave = 0;
             bool changes = false;
+
             void Save()
             {
                 var fs = new FS();

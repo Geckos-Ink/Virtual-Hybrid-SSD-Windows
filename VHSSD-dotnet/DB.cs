@@ -284,8 +284,8 @@ namespace VHSSD
 
                         var arrayOf = db.GetType(type.GetElementType());
 
-                        var arr = obj as object[];
-                        foreach(var item in arr)
+                        var arr = ((Array)obj).Cast<object>().ToArray();
+                        foreach (var item in arr)
                         {
                             var bytes = arrayOf.ObjToBytes(item);
                             resBytes.AddRange(bytes);
@@ -433,6 +433,8 @@ namespace VHSSD
 
                 public object Extract(object obj)
                 {
+                    if(obj == null) return null;
+
                     return info.GetValue(obj);
                 }
 
