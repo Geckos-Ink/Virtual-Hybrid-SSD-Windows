@@ -272,9 +272,38 @@ namespace VHSSD
                 {
                     using (MemoryStream memoryStream = new MemoryStream())
                     {
-                        IFormatter formatter = new BinaryFormatter();
-                        formatter.Serialize(memoryStream, obj);
-                        return memoryStream.ToArray();
+                        if (type == typeof(char))
+                            return BitConverter.GetBytes((char)obj);
+
+                        if (type == typeof(bool))
+                            return BitConverter.GetBytes((bool)obj);
+
+                        if (type == typeof(short))
+                            return BitConverter.GetBytes((short)obj);
+
+                        if (type == typeof(ushort))
+                            return BitConverter.GetBytes((ushort)obj);
+
+                        if (type == typeof(int))
+                            return BitConverter.GetBytes((int)obj);
+
+                        if (type == typeof(uint))
+                            return BitConverter.GetBytes((uint)obj);
+
+                        if (type == typeof(long))
+                            return BitConverter.GetBytes((long)obj);
+
+                        if (type == typeof(ulong))
+                            return BitConverter.GetBytes((ulong)obj);
+
+                        if (type == typeof(float))
+                            return BitConverter.GetBytes((float)obj);
+
+                        if (type == typeof(double))
+                            return BitConverter.GetBytes((double)obj);
+
+                        if (type == typeof(string))
+                            return BitConverter.GetBytes((string)obj);
                     }
                 }
                 else
