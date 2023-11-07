@@ -835,7 +835,7 @@ namespace VHSSD
                     if (Relation.Length != 1)
                         throw new Exception("GetOrderedKeys compatible only with unique key");
 
-                    return openOKs.First().Value;
+                    return GetOK(Relation[0]);
                 }
 
                 #region OpenedKeyManager
