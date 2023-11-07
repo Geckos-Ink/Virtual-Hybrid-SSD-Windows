@@ -292,6 +292,10 @@ namespace VHSSD
 
                         var arrayOf = db.GetType(type.GetElementType());
 
+                        // Better a void array than a null object
+                        if (obj == null)
+                            obj = new object[0];
+
                         var arr = ((Array)obj).Cast<object>().ToArray();
                         foreach (var item in arr)
                         {
@@ -1236,6 +1240,7 @@ namespace VHSSD
 
         #region InternalStructs
 
+        [Serializable]
         struct DataIndex
         {
             public long Index;
