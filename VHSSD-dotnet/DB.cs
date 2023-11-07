@@ -1074,18 +1074,21 @@ namespace VHSSD
                     }
                 }
 
+                OrderedDictionary<long, List<long>> orderedKeys = new OrderedDictionary<long, List<long>>();
+
                 var ks1 = GetKey(key1);
                 var ks2 = GetKey(key2);
 
                 var kks1 = ks1.Keys.keys;
                 var kks2 = ks2.Keys.keys;
 
+                if (kks1.Items.Count == 0 || kks2.Items.Count == 0)
+                    return orderedKeys;
+
                 var min1 = kks1.Items.First().Key;
                 var min2 = kks2.Items.First().Key;
                 var max1 = kks1.Items.Last().Key;
-                var max2 = kks2.Items.Last().Key;
-
-                OrderedDictionary<long, List<long>> orderedKeys = new OrderedDictionary<long, List<long>>();
+                var max2 = kks2.Items.Last().Key; 
 
                 var nkeys = kks1.Items.Count();
                 for(int i= 0; i < nkeys; i++)
