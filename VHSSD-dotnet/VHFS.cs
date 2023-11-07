@@ -42,8 +42,6 @@ namespace VHSSD
         public VHFS() {
             Sets = new Settings();
 
-            Sync = new Sync(this);
-
             DB = new DB(this);
 
             chucks = new Chucks(this);
@@ -55,6 +53,9 @@ namespace VHSSD
             TableDrive.SetKey("ID");
 
             root = new File(true, 0, this);
+
+            // Start sync
+            Sync = new Sync(this);
         }
 
         public class Settings
@@ -64,6 +65,11 @@ namespace VHSSD
             public int maxOpenedChucks = 32;
 
             public long saveIterateStreamAfter = 1000 * 5; // 5 seconds
+        }
+
+        public void Close()
+        {
+            Sync.Close();
         }
 
         #region Drives 

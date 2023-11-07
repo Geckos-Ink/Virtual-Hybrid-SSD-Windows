@@ -13,6 +13,9 @@ namespace VHSSD
     {
         VHFS vhfs;
 
+        bool timerDisposeActive = false;
+        bool chucksOrdererActive = false;
+
         Timer timerDispose;
         Thread chucksOrdererThread;
 
@@ -27,11 +30,14 @@ namespace VHSSD
         }
 
         OrderedDictionary<long, Chuck> chucksUsage = new OrderedDictionary<long, Chuck>();
-
         OrderedDictionary<long, DB.IterateStream> iterateStreamUsage = new OrderedDictionary<long, DB.IterateStream>();
 
         public void TimerDispose(object state)
         {
+            if (isClosing) return;
+
+            timerDisposeActive = true;
+
             ///
             /// Chucks
             ///
@@ -88,6 +94,8 @@ namespace VHSSD
 
                 stream.Value.Save();
             }
+
+            timerDisposeActive = false;
         }
 
         // Move most used and less used chucks
@@ -97,6 +105,11 @@ namespace VHSSD
         void ChucksOrderer()
         {
             while (true) {
+
+                if (isClosing) return;
+
+                chucksOrdererActive = true;
+
                 ///
                 /// Free SSD
                 ///
@@ -188,8 +201,19 @@ namespace VHSSD
                 }
 
                 nextStep1:
+
+                chucksOrdererActive = false;
+
                 // Wait (a little) for it...
                 Thread.Sleep(10);
+            }
+        }
+
+        public bool IsActive
+        {
+            get
+            {
+                return timerDisposeActive || chucksOrdererActive;
             }
         }
 
@@ -199,15 +223,20 @@ namespace VHSSD
 
         public bool isClosing = false;
 
-        void Close()
+        public void Close()
         {
             isClosing = true;
 
+            while (IsActive)
+                Thread.Sleep(1);
+
+            // Close iterate streams
             foreach(var stream in vhfs.DB.iterateStreams)
             {
                 stream.Save();
             }
 
+            // Close chucks
             foreach (var idChucks in vhfs.chucks.chucks)
             {
                 foreach (var chuck in idChucks.Value)
@@ -216,11 +245,13 @@ namespace VHSSD
                 }
             }
 
+            // Close bytes tables
             foreach(var table in vhfs.DB.bytesTables)
             {
                 table.Value.fileValues.Close();
             }
 
+            // Close all drives
             foreach(var drive in vhfs.AllDrives)
             {
                 drive.Close();

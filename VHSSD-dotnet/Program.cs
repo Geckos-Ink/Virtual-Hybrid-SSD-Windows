@@ -704,6 +704,8 @@ namespace VHSSD
         {
         }
 
+        VHFS vhfs;
+
         protected override void OnStart(String[] Args)
         {
             try
@@ -721,7 +723,7 @@ namespace VHSSD
                 MountPoint = "X:";
                 VolumePrefix = "\\vhfs\\test";
 
-                var vhfs = new VHFS();
+                vhfs = new VHFS();
 
                 vhfs.AddDrive("C", true);
                 vhfs.AddDrive("E", false);
@@ -834,6 +836,9 @@ namespace VHSSD
         {
             _Host.Unmount();
             _Host = null;
+
+            vhfs.Close();
+            Console.WriteLine("VHFS Closed.");
         }
 
         private static void argtos(String[] Args, ref int I, ref String V)
