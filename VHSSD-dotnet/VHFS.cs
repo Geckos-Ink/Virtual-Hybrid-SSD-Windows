@@ -31,7 +31,7 @@ namespace VHSSD
         public DB.Table<DB.FS> TableFS;
         public DB.Table<DB.Drive> TableDrive;
 
-        public List<Drive> AllDrives;
+        public List<Drive> AllDrives = new List<Drive>();
         public List<Drive> SSDDrives = new List<Drive>();
         public List<Drive> HDDDrives = new List<Drive>();
 

@@ -136,7 +136,6 @@ namespace VHSSD
 
             public bool hasDynamicSize = false;
 
-            public bool iterate = false;
             public System.Type[] iterateTypes;
             public bool isList = false;
             public bool isDictionary = false;
@@ -159,34 +158,30 @@ namespace VHSSD
 
                 if (type.IsGenericType)
                 {
-                    if (type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>)))
+                    // Get generic type argument(s)
+                    iterateTypes = type.GetGenericArguments();
+
+                    var genType = type.GetGenericTypeDefinition();
+
+                    isList = genType == typeof(List<>);
+                    isDictionary = genType == typeof(Dictionary<,>);
+
+                    if (isList)
                     {
-                        iterate = true;
+                        var t = iterateTypes[0];
+                        type = t.MakeArrayType();
 
-                        // Get generic type argument(s)
-                        iterateTypes = type.GetInterfaces()
-                                        .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-                                        .Select(i => i.GetGenericArguments()[0]).ToArray();
-
-                        var genType = type.GetGenericTypeDefinition();
-
-                        isList = genType == typeof(List<>);
-                        isDictionary = genType == typeof(Dictionary<,>);
-
-                        if (isList)
-                        {
-                            var t = iterateTypes[0];
-                            type = t.MakeArrayType();
-
-                            toArrayMethod = originalType.GetMethod("ToArray");
-                            toListMethod = type.GetMethod("ToList");
-                        }
-
-                        if (isDictionary)
-                        {
-                            throw new Exception("Dictionaries needs still to be implemented");
-                        }
+                        toArrayMethod = originalType.GetMethod("ToArray");
+                        toListMethod = type.GetMethod("ToList");
                     }
+
+                    if (isDictionary)
+                    {
+                        throw new Exception("Dictionaries needs still to be implemented");
+                    }
+
+                    //if (!isList && !isDictionary)
+                    //    Console.WriteLine("Possible unsupported generic type");
                 }
 
                 ///
@@ -196,7 +191,7 @@ namespace VHSSD
 
                 name = type.Name;
 
-                if (type.IsClass)
+                if (type.IsClass || type.IsConstructedGenericType)
                 {
                     this.members = new OrderedDictionary<string, Member>();
 
