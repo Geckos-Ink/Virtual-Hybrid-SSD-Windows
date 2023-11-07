@@ -1156,7 +1156,7 @@ namespace VHSSD
             {
                 var indexes = GetAllIndex(row, relation);
 
-                if(indexes.Count == 0) return -1;
+                if(indexes == null || indexes.Count == 0) return -1;
 
                 if(row.AbsIndex >= 0)
                 {
