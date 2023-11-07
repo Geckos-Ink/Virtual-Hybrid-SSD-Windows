@@ -150,6 +150,14 @@ namespace VHSSD
     {
         public List<Piece> Pieces = new List<Piece>();
 
+        public bool Used
+        {
+            get
+            {
+                return Pieces.Count > 0;
+            }
+        }
+
         public void Write(byte[] data, long pos)
         {
             var piece = new Piece() { Pos = pos, Data = data };

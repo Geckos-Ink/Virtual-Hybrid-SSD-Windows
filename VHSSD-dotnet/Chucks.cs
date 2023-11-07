@@ -374,7 +374,13 @@ namespace VHSSD
             {
                 InOperation = true;
 
-                var file = BestDrive();                
+                var file = BestDrive();
+
+                if (onHDD)
+                {
+                    // Make a decision: copy it on SSD or read directly as-is?
+                }
+
                 var res = file.Read(part.length, part.pos);
 
                 row.LastRead = CalculateAvgUsage();
