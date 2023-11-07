@@ -138,12 +138,12 @@ namespace VHSSD
                 if (pos < 0)
                 {
                     pos = 0;
-                    if (comparePP == 0) break;
+                    if (comparePP == 0 || compare > 0) break;
                 }
                 else if (pos >= insertionOrder.Count)
                 {
                     pos = insertionOrder.Count;
-                    if (comparePP == 0 || precision > 0) break;
+                    if (comparePP == 0 || compare < 0) break;
                 }
 
 

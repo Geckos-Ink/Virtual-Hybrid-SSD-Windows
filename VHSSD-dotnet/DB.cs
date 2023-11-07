@@ -879,7 +879,7 @@ namespace VHSSD
                         int i = 0;
                         while(openOKs.Count > maxOpen && i < ordered.Items.Count())
                         {
-                            var ok = ordered[i];
+                            var ok = ordered[i++];
                             ok.stream.Save();
                             openOKs.Remove(ok.name);
                         }
