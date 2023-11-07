@@ -13,6 +13,7 @@ using System.Collections;
 using System.Runtime.CompilerServices;
 using System.CodeDom;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace VHSSD
 {
@@ -550,16 +551,16 @@ namespace VHSSD
                 return keys.Items.Last().Key;
             }
 
+            // Put double instead of T?
             public T Avg()
             {
                 double res = 0;
 
                 foreach (var item in keys.Items)
-                    res += (dynamic)item.Key;
-
+                    res += Convert.ToDouble(item.Key);
                 res /= keys.Items.Count;
 
-                return (dynamic)res;
+                return (T)Convert.ChangeType(res, typeof(T));
             }
 
             #endregion
