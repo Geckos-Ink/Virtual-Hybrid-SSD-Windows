@@ -16,9 +16,11 @@ namespace VHSSD
         /// <summary>
         /// Full path of the file
         /// </summary>
-        public string FileName; 
+        public string FileName;
 
-        public FileStream stream;
+        public Stream stream;
+        public FileStream fstream;
+        public MemoryStream mstream;
 
         long openingLength = 0;
 
@@ -32,7 +34,8 @@ namespace VHSSD
         {
             if(stream == null)
             {
-                stream = new FileStream(FileName, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+                fstream = new FileStream(FileName, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+                stream = fstream;
 
                 openingLength = Length;
 

@@ -378,7 +378,13 @@ namespace VHSSD
 
                 if (onHDD)
                 {
+                    bool hddOverused = file.drive.ReadOverUsed;
+
                     // Make a decision: copy it on SSD or read directly as-is?
+                    if (ramFile.Used)
+                    {
+
+                    }
                 }
 
                 var res = file.Read(part.length, part.pos);
