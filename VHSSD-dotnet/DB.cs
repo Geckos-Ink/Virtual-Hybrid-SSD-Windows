@@ -577,7 +577,7 @@ namespace VHSSD
             internal DB db;
             internal File file;
 
-            public IterateStream()
+            public IterateStream(DB db)
             {
                 db.iterateStreams.Add(this);
             }
@@ -611,7 +611,7 @@ namespace VHSSD
 
             public bool sort = false;
 
-            public ListStream(DB db, string name, List<T> list) : base()
+            public ListStream(DB db, string name, List<T> list) : base(db)
             {
                 this.db = db;
                 this.list = list;
@@ -677,7 +677,7 @@ namespace VHSSD
                 public VV Value;
             }
 
-            public OrderedDictionaryStream(DB db, string name, OrderedDictionary<T, V> dict) : base()
+            public OrderedDictionaryStream(DB db, string name, OrderedDictionary<T, V> dict) : base(db)
             {
                 this.db = db;
                 this.dict = dict;
