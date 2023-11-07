@@ -12,16 +12,16 @@ namespace VHSSD
         public int level = 0;
         public char key;
 
-        public List<string> keys;
+        public List<string> Keys;
         public Dictionary<char, Tree<T>> tree;
 
         public string jumpTo;
 
-        public T value;
+        public T Value;
 
         public Tree()
         {
-            keys = new List<string>();
+            Keys = new List<string>();
         }
 
         public Tree(Tree<T> parent, char key)
@@ -98,8 +98,8 @@ namespace VHSSD
                         l.tree = new Dictionary<char, Tree<T>>();
                         var jt = l.jumpTo;
                         l.jumpTo = null;
-                        l.Set(jt, l.value);
-                        l.value = default(T);
+                        l.Set(jt, l.Value);
+                        l.Value = default(T);
                     }
 
                     var nextL = l.Get(lkey[i]);
@@ -114,9 +114,9 @@ namespace VHSSD
             }
 
             if(!exists)
-                keys.Add(key);
+                Keys.Add(key);
 
-            l.value = value;
+            l.Value = value;
         }
 
 
@@ -124,11 +124,11 @@ namespace VHSSD
         {
             var l = Get(key);
 
-            l.value = default(T);
+            l.Value = default(T);
            
             while(l != null)
             {
-                if (l.value == null && l.tree == null)
+                if (l.Value == null && l.tree == null)
                 {
                     l.parent?.tree.Remove(l.key);
                 }
@@ -139,7 +139,7 @@ namespace VHSSD
                     var k = keys.ElementAt(0);
                     var jt = l.tree[k];
                     l.jumpTo = k + (jt.jumpTo ?? "");
-                    l.value = jt.value;
+                    l.Value = jt.Value;
                     l.tree = jt.tree;
                     l.tree = null;
                 }
@@ -147,7 +147,7 @@ namespace VHSSD
                 l = l.parent;
             }
 
-            keys.Remove(key);
+            Keys.Remove(key);
         }
 
     }

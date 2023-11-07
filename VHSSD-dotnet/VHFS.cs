@@ -332,7 +332,6 @@ namespace VHSSD
                 attributes.SecurityDescription = fs.SecurityDescription;
 
                 /// Load tree
-                filesIDs = fs.Files;
                 if(!lazy)
                     LoadFiles();
 
@@ -342,12 +341,11 @@ namespace VHSSD
 
             bool loadedFiles = false;
 
-            long[] filesIDs;
             void LoadFiles()
             {
                 if (isDirectory && !loadedFiles)
                 {
-                    foreach (var fid in filesIDs)
+                    foreach (var fid in lastFS.Files)
                     {
                         var file = new File(fid, this.vhfs, this);
                         file.Load(true);
@@ -379,6 +377,13 @@ namespace VHSSD
                 fs.FileSize = attributes.FileSize;
                 fs.SecurityDescription = attributes.SecurityDescription;
 
+                // Get file tree
+                fs.Files = new long[files.Keys.Count];
+
+                var f = 0;
+                foreach (var key in files.Keys)
+                    fs.Files[f] = files.Get(files.Keys[f++]).Value.ID;
+
                 var tFS = vhfs.DB.GetType(typeof(DB.FS));
                 if (!tFS.CompareObjs(fs, lastFS))
                 {
@@ -386,6 +391,9 @@ namespace VHSSD
                     lastFS = fs;
                     lastSave = Static.UnixTimeMS;
                 }
+
+                lastSave = 0;
+                changes = false;
             }
 
             #endregion
@@ -409,14 +417,14 @@ namespace VHSSD
                 if (String.IsNullOrEmpty(name))
                     return this;
 
-                return files.Get(name)?.value;
+                return files.Get(name)?.Value;
             }
 
             public List<string> ListFiles()
             {
                 LoadFiles();
 
-                return files?.keys;
+                return files?.Keys;
             }
 
             public void Remove()

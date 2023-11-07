@@ -574,7 +574,7 @@ namespace VHSSD
         {
             var file = (VHFS.File)FileDesc0;
 
-            if (file.isDirectory && file.files.keys.Count > 0)
+            if (file.isDirectory && file.files.Keys.Count > 0)
                 return STATUS_DIRECTORY_NOT_EMPTY;
 
             return STATUS_SUCCESS;
