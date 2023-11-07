@@ -301,9 +301,6 @@ namespace VHSSD
 
                         if (type == typeof(double))
                             return BitConverter.GetBytes((double)obj);
-
-                        if (type == typeof(string))
-                            return BitConverter.GetBytes((string)obj);
                     }
                 }
                 else
