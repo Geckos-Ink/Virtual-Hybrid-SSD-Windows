@@ -57,19 +57,22 @@ namespace VHSSD
 
             var now = Static.UnixTimeMS;
 
-            if (chucksUsage.Items.Count() > vhfs.Sets.maxOpenedChucks || (now - chucksUsage.Items.First().Key) > (vhfs.Sets.closeChuckAfter * 2))
+            if (chucksUsage.Items.Count > 0)
             {
-                foreach (var chuck in chucksUsage.Items)
+                if (chucksUsage.Items.Count() > vhfs.Sets.maxOpenedChucks || (now - chucksUsage.Items.First().Key) > (vhfs.Sets.closeChuckAfter * 2))
                 {
-                    var diff = now - chuck.Key;
-                    if (diff < vhfs.Sets.closeChuckAfter)
-                        break;
+                    foreach (var chuck in chucksUsage.Items)
+                    {
+                        var diff = now - chuck.Key;
+                        if (diff < vhfs.Sets.closeChuckAfter)
+                            break;
 
-                    var cv = chuck.Value;
-                    if (cv.InOperation || cv.onExchange)
-                        continue;
+                        var cv = chuck.Value;
+                        if (cv.InOperation || cv.onExchange)
+                            continue;
 
-                    cv.Close();
+                        cv.Close();
+                    }
                 }
             }
 
