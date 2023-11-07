@@ -140,7 +140,9 @@ namespace VHSSD
 
             public string name;
             public int size = -1;
+
             public bool isString = false;
+            public bool isValue = false;
 
             public bool hasDynamicSize = false;
 
@@ -199,7 +201,8 @@ namespace VHSSD
 
                 name = type.Name;
 
-                if (type.IsClass || type.IsConstructedGenericType)
+                // AnsiClass => struct
+                if (type.IsAnsiClass || type.IsClass || type.IsConstructedGenericType)
                 {
                     this.members = new OrderedDictionary<string, Member>();
 
@@ -224,7 +227,10 @@ namespace VHSSD
                 {
                     if (!type.IsArray) {
                         if (type.IsValueType)
-                            size = Marshal.SizeOf(type);                     
+                        {
+                            size = Marshal.SizeOf(type);
+                            isValue = true;
+                        }
                     }
                     else
                     {
@@ -268,40 +274,37 @@ namespace VHSSD
                 if (isString)
                     obj = ((string)obj).ToCharArray();
 
-                if (type.IsValueType)
+                if (isValue)
                 {
-                    using (MemoryStream memoryStream = new MemoryStream())
-                    {
-                        if (type == typeof(char))
-                            return BitConverter.GetBytes((char)obj);
+                    if (type == typeof(char))
+                        return BitConverter.GetBytes((char)obj);
 
-                        if (type == typeof(bool))
-                            return BitConverter.GetBytes((bool)obj);
+                    if (type == typeof(bool))
+                        return BitConverter.GetBytes((bool)obj);
 
-                        if (type == typeof(short))
-                            return BitConverter.GetBytes((short)obj);
+                    if (type == typeof(short))
+                        return BitConverter.GetBytes((short)obj);
 
-                        if (type == typeof(ushort))
-                            return BitConverter.GetBytes((ushort)obj);
+                    if (type == typeof(ushort))
+                        return BitConverter.GetBytes((ushort)obj);
 
-                        if (type == typeof(int))
-                            return BitConverter.GetBytes((int)obj);
+                    if (type == typeof(int))
+                        return BitConverter.GetBytes((int)obj);
 
-                        if (type == typeof(uint))
-                            return BitConverter.GetBytes((uint)obj);
+                    if (type == typeof(uint))
+                        return BitConverter.GetBytes((uint)obj);
 
-                        if (type == typeof(long))
-                            return BitConverter.GetBytes((long)obj);
+                    if (type == typeof(long))
+                        return BitConverter.GetBytes((long)obj);
 
-                        if (type == typeof(ulong))
-                            return BitConverter.GetBytes((ulong)obj);
+                    if (type == typeof(ulong))
+                        return BitConverter.GetBytes((ulong)obj);
 
-                        if (type == typeof(float))
-                            return BitConverter.GetBytes((float)obj);
+                    if (type == typeof(float))
+                        return BitConverter.GetBytes((float)obj);
 
-                        if (type == typeof(double))
-                            return BitConverter.GetBytes((double)obj);
-                    }
+                    if (type == typeof(double))
+                        return BitConverter.GetBytes((double)obj);
                 }
                 else
                 {
@@ -334,7 +337,8 @@ namespace VHSSD
                         index.Index = db.GetBytesTable(index.Size).Set(resBytes.ToArray());
 
                         var tDataIndex = db.GetType(typeof(DataIndex));
-                        return tDataIndex.ObjToBytes(index);
+                        var res = tDataIndex.ObjToBytes(index);
+                        return res;
                     }
                     else
                     {
