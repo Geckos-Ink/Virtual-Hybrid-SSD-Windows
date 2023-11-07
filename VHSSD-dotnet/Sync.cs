@@ -38,64 +38,81 @@ namespace VHSSD
 
             timerDisposeActive = true;
 
+            var now = Static.UnixTimeMS;
+
             ///
             /// Chucks
             ///
-            chucksUsage.Clear();
 
-            foreach (var idChucks in vhfs.chucks.chucks)
+            try
             {
-                foreach (var chuck in idChucks.Value)
+                chucksUsage.Clear();
+
+                foreach (var idChucks in vhfs.chucks.chucks)
                 {
-                    try
+                    foreach (var chuck in idChucks.Value)
                     {
-                        chucksUsage.Add(chuck.Value.LastUsage, chuck.Value);
+                        try
+                        {
+                            chucksUsage.Add(chuck.Value.LastUsage, chuck.Value);
+                        }
+                        catch { }
                     }
-                    catch { }
+                }
+
+                if (chucksUsage.Items.Count > 0)
+                {
+                    if (chucksUsage.Items.Count() > vhfs.Sets.maxOpenedChucks || (now - chucksUsage.Items.First().Key) > (vhfs.Sets.closeChuckAfter * 2))
+                    {
+                        foreach (var chuck in chucksUsage.Items)
+                        {
+                            var diff = now - chuck.Key;
+                            if (diff < vhfs.Sets.closeChuckAfter)
+                                break;
+
+                            var cv = chuck.Value;
+                            if (cv.InOperation || cv.onExchange)
+                                continue;
+
+                            cv.Close();
+                        }
+                    }
                 }
             }
-
-            var now = Static.UnixTimeMS;
-
-            if (chucksUsage.Items.Count > 0)
+            catch (Exception ex)
             {
-                if (chucksUsage.Items.Count() > vhfs.Sets.maxOpenedChucks || (now - chucksUsage.Items.First().Key) > (vhfs.Sets.closeChuckAfter * 2))
-                {
-                    foreach (var chuck in chucksUsage.Items)
-                    {
-                        var diff = now - chuck.Key;
-                        if (diff < vhfs.Sets.closeChuckAfter)
-                            break;
-
-                        var cv = chuck.Value;
-                        if (cv.InOperation || cv.onExchange)
-                            continue;
-
-                        cv.Close();
-                    }
-                }
+                Console.WriteLine(ex.ToString());
             }
 
             ///
             /// IterateStreams
             ///
-            iterateStreamUsage.Clear();
 
-            foreach(var stream in vhfs.DB.iterateStreams)
+            try
             {
-                try
+                iterateStreamUsage.Clear();
+
+                var _iterateStreams = new List<DB.IterateStream>(vhfs.DB.iterateStreams);
+                foreach (var stream in _iterateStreams)
                 {
-                    iterateStreamUsage.Add(stream.lastChange, stream);
+                    try
+                    {
+                        iterateStreamUsage.Add(stream.lastChange, stream);
+                    }
+                    catch { }
                 }
-                catch { }
+
+                foreach (var stream in iterateStreamUsage.Items)
+                {
+                    if (now - stream.Key > vhfs.Sets.saveIterateStreamAfter)
+                        break;
+
+                    stream.Value.Save();
+                }
             }
-
-            foreach(var stream in iterateStreamUsage.Items)
+            catch(Exception ex)
             {
-                if (now - stream.Key > vhfs.Sets.saveIterateStreamAfter)
-                    break;
-
-                stream.Value.Save();
+                Console.WriteLine(ex.ToString());
             }
 
             timerDisposeActive = false;
@@ -111,99 +128,105 @@ namespace VHSSD
 
                 if (isClosing) return;
 
-                chucksOrdererActive = true;
-
-                ///
-                /// Free SSD
-                ///
-                var ssdsToFree = new List<VHFS.Drive>();
-
-                foreach (var drive in vhfs.SSDDrives)
+                try
                 {
-                    var fs = drive.UsedSpace();
-                    if (fs > maxSsdUsedSpace)
-                        ssdsToFree.Add(drive);
-                }
+                    chucksOrdererActive = true;
 
-                if (ssdsToFree.Count == 0)
-                    goto nextStep0;
+                    ///
+                    /// Free SSD
+                    ///
+                    var ssdsToFree = new List<VHFS.Drive>();
 
-                var ssdToFree = ssdsToFree.OrderBy(d => d.lastUsedSpace).First();
-
-                // Break the glass in case of necessity
-                //var hddUsages = vhfs.HDDDrives.OrderBy(d => d.lastUsedSpace);
-                //var lessUsedHDD = hddUsages.Last();
-
-                var where = new DB.Chuck() { OnSSD = true, SSD_ID = ssdToFree.id };
-                var orderedChucks = vhfs.chucks.tableChuck.AvgKeys("Temperature", "LastUsage", where);
-
-                var cycles = 0;
-                while(cycles < maxMovingCycles && ssdToFree.UsedSpace() > maxSsdUsedSpace)
-                {
-                    var indexes = orderedChucks.Items[cycles].Value;
-
-                    // Yep, it doesn't count the cycles. This is the "Italian way"
-                    foreach(var index in indexes) {
-                        var row = vhfs.chucks.tableChuck.Get(index);
-                        var chuck = vhfs.chucks.GetChuck(row);
-
-                        // For the moment, in case of using instance, just ignore it
-                        if (chuck.inUsing)
-                            continue;
-
-                        chuck.onExchange = true;
-                        chuck.MoveToHDD();
-                        chuck.onExchange = false;
+                    foreach (var drive in vhfs.SSDDrives)
+                    {
+                        var fs = drive.UsedSpace();
+                        if (fs > maxSsdUsedSpace)
+                            ssdsToFree.Add(drive);
                     }
 
-                    cycles++;
-                }
+                    if (ssdsToFree.Count == 0)
+                        goto nextStep;
 
-                nextStep0:
-                ///
-                /// Move warmer files to SSD
-                ///
-                var mostFreeSsdsList = new List<VHFS.Drive>();
+                    var ssdToFree = ssdsToFree.OrderBy(d => d.lastUsedSpace).First();
 
-                foreach (var drive in vhfs.SSDDrives)
-                {
-                    var fs = drive.UsedSpace();
-                    if(fs < 0.75)
-                        mostFreeSsdsList.Add(drive);
-                }
+                    // Break the glass in case of necessity
+                    //var hddUsages = vhfs.HDDDrives.OrderBy(d => d.lastUsedSpace);
+                    //var lessUsedHDD = hddUsages.Last();
 
-                var mostFree = mostFreeSsdsList.OrderByDescending(d => d.lastUsedSpace).ToList();
-                var warmerChucks = vhfs.chucks.tableChuck.AvgKeys("Temperature", "LastUsage");
+                    var where = new DB.Chuck() { OnSSD = true, SSD_ID = ssdToFree.id };
+                    var orderedChucks = vhfs.chucks.tableChuck.AvgKeys("Temperature", "LastUsage", where);
 
-                var keyTemperature = vhfs.chucks.tableChuck.GetKey("Temperature").GetOrderedKeys();
-                var avgTemp = keyTemperature.Avg();
-
-                var tick = 0;
-                cycles = 0; // little bit confusing? but i'm a really confusing. 
-                while(cycles < maxMovingCycles && tick < warmerChucks.Items.Count && mostFree.Count() > 0)
-                {
-                    var indexes = warmerChucks.Items[warmerChucks.Items.Count - (1+tick)];
-                    
-                    foreach(var index in indexes.Value)
+                    var cycles = 0;
+                    while (cycles < maxMovingCycles && ssdToFree.UsedSpace() > maxSsdUsedSpace)
                     {
-                        var row = vhfs.chucks.tableChuck.Get(index);
-                        if (row.OnSSD) continue;
+                        var indexes = orderedChucks.Items[cycles].Value;
 
-                        if (row.Temperature < avgTemp) continue;
+                        // Yep, it doesn't count the cycles. This is the "Italian way"
+                        foreach (var index in indexes)
+                        {
+                            var row = vhfs.chucks.tableChuck.Get(index);
+                            var chuck = vhfs.chucks.GetChuck(row);
 
-                        var chuck = vhfs.chucks.GetChuck(row);
-                        if (chuck.inUsing) continue;
+                            // For the moment, in case of using instance, just ignore it
+                            if (chuck.inUsing)
+                                continue;
 
-                        var ssd = mostFree[cycles % mostFree.Count];
-                        chuck.MoveToSSD();
+                            chuck.onExchange = true;
+                            chuck.MoveToHDD();
+                            chuck.onExchange = false;
+                        }
 
                         cycles++;
                     }
 
-                    tick++;
-                }
+                nextStep:
+                    ///
+                    /// Move warmer files to SSD
+                    ///
+                    var mostFreeSsdsList = new List<VHFS.Drive>();
 
-                nextStep1:
+                    foreach (var drive in vhfs.SSDDrives)
+                    {
+                        var fs = drive.UsedSpace();
+                        if (fs < 0.75)
+                            mostFreeSsdsList.Add(drive);
+                    }
+
+                    var mostFree = mostFreeSsdsList.OrderByDescending(d => d.lastUsedSpace).ToList();
+                    var warmerChucks = vhfs.chucks.tableChuck.AvgKeys("Temperature", "LastUsage");
+
+                    var keyTemperature = vhfs.chucks.tableChuck.GetKey("Temperature").GetOrderedKeys();
+                    var avgTemp = keyTemperature.Avg();
+
+                    var tick = 0;
+                    cycles = 0; // little bit confusing? but i'm a really confusing. 
+                    while (cycles < maxMovingCycles && tick < warmerChucks.Items.Count && mostFree.Count() > 0)
+                    {
+                        var indexes = warmerChucks.Items[warmerChucks.Items.Count - (1 + tick)];
+
+                        foreach (var index in indexes.Value)
+                        {
+                            var row = vhfs.chucks.tableChuck.Get(index);
+                            if (row.OnSSD) continue;
+
+                            if (row.Temperature < avgTemp) continue;
+
+                            var chuck = vhfs.chucks.GetChuck(row);
+                            if (chuck.inUsing) continue;
+
+                            var ssd = mostFree[cycles % mostFree.Count];
+                            chuck.MoveToSSD();
+
+                            cycles++;
+                        }
+
+                        tick++;
+                    }
+                }
+                catch (Exception ex) 
+                { 
+                    Console.WriteLine(ex.ToString());
+                }
 
                 chucksOrdererActive = false;
 
