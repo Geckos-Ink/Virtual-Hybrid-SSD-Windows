@@ -255,8 +255,8 @@ namespace VHSSD
 
                 if (type.IsArray)
                 {
-                    var a1 = obj1 as object[];
-                    var a2 = obj2 as object[];
+                    var a1 = ((Array)obj1).Cast<object>();
+                    var a2 = ((Array)obj2).Cast<object>();
                     return a1.SequenceEqual(a2);
                 }
 
@@ -970,7 +970,10 @@ namespace VHSSD
                             }
                             else
                             {
-                                nextKeys = keys.keys.Last().Value.Max() + 1;
+                                nextKeys = 0;
+                                if(keys.keys.Items.Count > 0)
+                                    nextKeys = keys.keys.Last().Value.Max() + 1;
+
                                 keys.Set(val, nextKeys);
                             }
                         }
