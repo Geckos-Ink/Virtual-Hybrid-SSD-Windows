@@ -100,6 +100,13 @@ namespace VHSSD
 
         public void Close()
         {
+            if(mstream != null)
+            {
+                mstream.CopyTo(fstream);
+                mstream.Close();
+                stream = mstream;
+            }
+
             if (stream != null && stream.CanRead)
             {
                 if (drive != null)
@@ -143,6 +150,18 @@ namespace VHSSD
 
                 bytesRead = until;
             }
+        }
+
+        public void LinkRamFile(RamFile ramFile)
+        {
+            var bytes = Read(Length);
+            mstream = new MemoryStream(bytes);
+
+            // Apply changes
+            foreach (var piece in ramFile.Pieces)
+                Write(piece.Data, piece.Pos);
+
+            ramFile.Pieces.Clear(); // changed applied
         }
     }
 

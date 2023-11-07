@@ -25,6 +25,11 @@ namespace VHSSD
             tableChuck.SetKey("ID", "Part");
             tableChuck.SetKey("Temperature");
             tableChuck.SetKey("LastUsage");
+
+            // Stats
+            TotalBytes = new Stats();
+            BytesRead = new Stats(TotalBytes);
+            BytesWrite = new Stats(TotalBytes);
         } 
 
         public struct Part
@@ -106,54 +111,18 @@ namespace VHSSD
 
         #region Stats
 
-        public long AvgBytesRead = 0;
-        Dictionary<long, long> bytesRead = new Dictionary<long, long>();
+        public Stats TotalBytes;
+
+        public Stats BytesRead;
         void addReadBytes(long length)
         {
-            var now = Static.UnixTime;
-            if (bytesRead.ContainsKey(now))
-            {
-                bytesRead[now] += length;
-            }
-            else
-            {
-                if (bytesRead.Count > 0)
-                {
-                    var prev = bytesRead.First();
-                    AvgBytesRead = (AvgBytesRead + prev.Value) / 2;
-                    bytesRead.Remove(prev.Key);
-                }
-
-
-                bytesRead.Add(now, length);
-            }
+            BytesRead.Add(length);
         }
 
-        public long AvgBytesWrite = 0;
-        Dictionary<long, long> bytesWrite = new Dictionary<long, long>();
+        public Stats BytesWrite;
         void addWriteBytes(long length)
         {
-            var now = Static.UnixTime;
-            if (bytesWrite.ContainsKey(now))
-            {
-                bytesWrite[now] += length;
-            }
-            else
-            {
-                if (bytesWrite.Count > 0)
-                {
-                    var prev = bytesWrite.First();
-                    AvgBytesWrite = (AvgBytesWrite + prev.Value) / 2;
-                    bytesWrite.Remove(prev.Key);
-                }
-
-                bytesWrite.Add(now, length);
-            }
-        }
-
-        public long Traffic
-        {
-            get { return AvgBytesRead + AvgBytesRead; }
+            BytesWrite.Add(length);
         }
 
         #endregion
@@ -186,6 +155,8 @@ namespace VHSSD
                 var chuck = GetChuck(ID, part.part);
                 chuck.inUsing = true;
                 chuck.Write(part, bb);
+
+                addWriteBytes(bb.Length);
             }
         }
 
@@ -353,15 +324,16 @@ namespace VHSSD
 
             public long CalculateAvgUsage()
             {
+                Usages++;
+
                 // More precision to temperature to compensante integer flooring
-                double temp = ((row.Temperature * Usages) + (chucks.Traffic*100)) / (Usages + 1);
+                double temp = ((row.Temperature * Usages) + (chucks.TotalBytes.Avg * 100)) / (Usages + 1);
                 row.Temperature = (long)temp;
 
                 long now = Static.UnixTimeMS;
 
                 double diff = now - LastUsage;
                 AvgUsage = (diff + AvgUsage * Usages) / (Usages+1);
-                Usages++;
 
                 LastUsage = now;
                 return now;
@@ -378,13 +350,8 @@ namespace VHSSD
 
                 if (onHDD)
                 {
-                    bool hddOverused = file.drive.ReadOverUsed;
-
-                    // Make a decision: copy it on SSD or read directly as-is?
                     if (ramFile.Used)
-                    {
-
-                    }
+                        file.LinkRamFile(ramFile);
                 }
 
                 var res = file.Read(part.length, part.pos);
