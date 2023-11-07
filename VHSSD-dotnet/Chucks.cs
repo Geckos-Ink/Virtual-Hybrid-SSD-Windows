@@ -163,12 +163,20 @@ namespace VHSSD
         public void Resize(long ID, long from, long to)
         {
             long diffLength = from - to;
-            var parts = GetParts(to, diffLength);
 
-            foreach(var part in parts)
+            if (diffLength > 0)
             {
-                var chuck = GetChuck(ID, part.part);
-                chuck.Resize(part);
+                var parts = GetParts(to, diffLength);
+
+                foreach (var part in parts)
+                {
+                    var chuck = GetChuck(ID, part.part);
+
+                    if (part.pos > 0)
+                        chuck.Resize(part.pos);
+                    else
+                        chuck.Delete();
+                }
             }
         }
 
@@ -251,24 +259,6 @@ namespace VHSSD
             public void SaveRow()
             {
                 chucks.tableChuck.Set(row);
-            }
-
-            public File LoadFile(bool all = false)
-            {
-                if(fileSSD == null && row.SSD_ID >= 0)
-                {
-                    GetSSD();
-                    onHDD = false;
-                }
-
-                // in this moment the chuck is always present on HDD
-                if(fileSSD == null || all || !SSDUpdated())
-                {
-                    GetHDD();
-                    onHDD = true;
-                }
-
-                return onHDD ? fileHDD : fileSSD;
             }
 
             public void Close()
@@ -368,8 +358,6 @@ namespace VHSSD
 
             public long CalculateAvgUsage()
             {
-                Usages++;
-
                 // More precision to temperature to compensante integer flooring
                 double temp = ((row.Temperature * Usages) + (chucks.TotalBytes.Avg * 100)) / (Usages + 1);
                 row.Temperature = (long)temp;
@@ -378,6 +366,8 @@ namespace VHSSD
 
                 double diff = now - LastUsage;
                 AvgUsage = (diff + AvgUsage * Usages) / (Usages+1);
+
+                Usages++;
 
                 LastUsage = now;
                 return now;
@@ -400,11 +390,6 @@ namespace VHSSD
                 var file = BestDrive();
 
                 Sync(file);
-
-                if (onHDD)
-                {
-                    
-                }
 
                 var res = file.Read(part.length, part.pos);
 
@@ -447,26 +432,19 @@ namespace VHSSD
                 InOperation = false;
             }
 
-            public void Resize(Part part)
+            public void Resize(long length)
             {
-                LoadFile(true);
+                var file = MainFile();
+                file.Length = length;
+            }
 
-                if(part.length < chucks.vhfs.Sets.chuckSize)
-                {
-                    if (fileSSD != null)
-                        fileSSD.Length = part.length;
+            public void Delete()
+            {
+                if(row.SSD_Version >= 0)
+                    GetSSD().Delete();
 
-                    if (fileHDD != null)
-                        fileHDD.Length = part.length;
-                }
-                else
-                {
-                    if (fileSSD != null)
-                        fileSSD.Delete();
-
-                    if(fileHDD != null)
-                        fileHDD.Delete();
-                }
+                if(row.HDD_Version >= 0)
+                    GetHDD().Delete();
             }
 
             #region Sync
