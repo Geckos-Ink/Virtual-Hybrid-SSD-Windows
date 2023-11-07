@@ -108,6 +108,9 @@ namespace VHSSD
 
         public int InsertAt(TKey key)
         {
+            if (insertionOrder.Count == 0)
+                return 0;
+
             // Improve the algorithm
             int precision = insertionOrder.Count / 2;
             int pos = precision;
@@ -140,7 +143,7 @@ namespace VHSSD
                 else if (pos >= insertionOrder.Count)
                 {
                     pos = insertionOrder.Count;
-                    if (comparePP == 0) break;
+                    if (comparePP == 0 || precision > 0) break;
                 }
 
 

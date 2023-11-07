@@ -427,7 +427,7 @@ namespace VHSSD
                 {
                     this.info = info;
 
-                    var type = info.DeclaringType;
+                    var type = info.FieldType;
                     this.type = db.GetType(type);
 
                     if (type.IsArray)
