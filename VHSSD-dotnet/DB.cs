@@ -59,6 +59,8 @@ namespace VHSSD
                 this.db = db;
                 this.size = (long)size;
 
+                if (size == 0) return;
+
                 this.freeSlotsStream = new ListStream<long>(db, "bt-fs-" + size, freeSlots);
 
                 fileValues = new File(db.dir + "bt-" + size + ".bin");
@@ -66,11 +68,15 @@ namespace VHSSD
 
             public byte[] Get(long index)
             {
+                if (size == 0) return new byte[0];
+
                 return fileValues.Read(size, size * index);
             }
 
             public long Set(byte[] value, long index = -1)
             {
+                if (size == 0) return 0;
+
                 if (value.Length != size)
                     throw new ArgumentException("bytes size dismatch with the BytesTable size");
 
@@ -93,6 +99,8 @@ namespace VHSSD
 
             public void Delete(long index)
             {
+                if (size == 0) return;
+
                 freeSlots.Add(index);
                 freeSlotsStream.Changed = true;
             }
