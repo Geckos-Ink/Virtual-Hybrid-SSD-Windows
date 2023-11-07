@@ -201,8 +201,7 @@ namespace VHSSD
 
                 name = type.Name;
 
-                // AnsiClass => struct
-                if (type.IsAnsiClass || type.IsClass || type.IsConstructedGenericType)
+                if (type.IsClass || type.IsConstructedGenericType)
                 {
                     this.members = new OrderedDictionary<string, Member>();
 
@@ -1270,8 +1269,7 @@ namespace VHSSD
 
         #region InternalStructs
 
-        [Serializable]
-        struct DataIndex
+        class DataIndex
         {
             public long Index;
             public int Size;
