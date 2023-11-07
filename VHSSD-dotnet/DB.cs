@@ -549,10 +549,14 @@ namespace VHSSD
             // Put double instead of T?
             public T Avg()
             {
+                if (keys.Items.Count == 0)
+                    return default(T);
+
                 double res = 0;
 
                 foreach (var item in keys.Items)
                     res += Convert.ToDouble(item.Key);
+
                 res /= keys.Items.Count;
 
                 return (T)Convert.ChangeType(res, typeof(T));
