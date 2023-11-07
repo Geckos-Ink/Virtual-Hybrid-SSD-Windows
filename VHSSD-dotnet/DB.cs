@@ -227,12 +227,19 @@ namespace VHSSD
                     if (!type.IsArray) {
                         if (type.IsValueType)
                         {
-                            size = Marshal.SizeOf(type);
+                            // Better to obtain the size empirically
+                            var def = Activator.CreateInstance(type);
+                            var bytes = ObjToBytes(def);
+
+                            size = bytes.Length; // Marshal.SizeOf(type);
                             isValue = true;
                         }
+                        else
+                            throw new Exception("What is das?");
                     }
                     else
                     {
+                        size = db.GetType(typeof(DataIndex)).size; //todo: cache DataIndex size
                         hasDynamicSize = true;
                     }
                 }
