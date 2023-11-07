@@ -959,7 +959,7 @@ namespace VHSSD
                         var keys = keysStack[r];
 
                         var rel = Relation[r];
-                        var val = (long)table.type.members[rel].Extract(row);
+                        var val = Convert.ToInt64(table.type.members[rel].Extract(row));
 
                         if (keys.Has(val))
                         {
