@@ -190,6 +190,8 @@ namespace VHSSD
             public bool inUsing = false;
             public bool inWrite = false; // during this instance was performed at least a write operation
 
+            string chuckName;
+
             public Chuck(Chucks chucks, long id, long part, DB.Chuck row = null)
             {
                 this.chucks = chucks;
@@ -204,6 +206,8 @@ namespace VHSSD
                     LoadRow();
 
                 LastUsage = Static.UnixTimeMS;
+
+                chuckName = row.ID.ToString("X") + "_" + row.Part.ToString("X") + ".bin";
             }
 
             #region Properties 
@@ -249,28 +253,29 @@ namespace VHSSD
                 chucks.tableChuck.Set(row);
             }
 
-            public void LoadFile(bool all = false)
+            public File LoadFile(bool all = false)
             {
-                var chuckName = row.ID.ToString("X")+"_"+row.Part.ToString("X")+".bin";
-
                 if(fileSSD == null && row.SSD_ID >= 0)
                 {
-                    var drive = chucks.vhfs.AllDrives[row.SSD_ID];
-                    fileSSD = new File(drive.Dir + chuckName, drive);
+                    GetSSD();
                     onHDD = false;
                 }
 
                 // in this moment the chuck is always present on HDD
-                if(row.SSD_ID < 0 || all || !SSDUpdated())
+                if(fileSSD == null || all || !SSDUpdated())
                 {
-                    var drive = chucks.vhfs.AllDrives[row.HDD_ID];
-                    fileHDD = new File(drive.Dir + chuckName, drive);
+                    GetHDD();
                     onHDD = true;
                 }
+
+                return onHDD ? fileHDD : fileSSD;
             }
 
             public void Close()
             {
+                if (ramFile.Used)
+                    MainFile().LinkRamFile(ramFile);
+
                 if (fileSSD != null)
                     fileSSD.Close();
 
@@ -283,6 +288,8 @@ namespace VHSSD
             }
 
             #endregion
+
+            #region Drives
 
             public bool SSDUpdated()
             {
@@ -301,16 +308,53 @@ namespace VHSSD
 
             public File BestDrive()
             {
-                if (fileSSD != null && SSDUpdated())
+                if (SSDUpdated())
                 {
                     onHDD = false;
-                    return fileSSD;
+                    return GetSSD();
                 }
                 else
                 {
                     onHDD = true;
-                    return fileHDD;
+                    return GetHDD();
                 }
+            }
+
+            public File MainFile()
+            {
+                File res = null;
+
+                if (onHDD) 
+                    res = fileHDD;
+                else 
+                    res = fileSSD;
+
+                if (res == null)
+                    res = BestDrive();
+
+                return res;
+            }
+
+            public File GetSSD()
+            {
+                if(fileSSD == null)
+                {
+                    var drive = chucks.vhfs.AllDrives[row.SSD_ID];
+                    fileSSD = new File(drive.Dir + chuckName, drive);
+                }
+
+                return fileSSD;
+            }
+
+            public File GetHDD()
+            {
+                if(fileHDD == null)
+                {
+                    var drive = chucks.vhfs.AllDrives[row.HDD_ID];
+                    fileHDD = new File(drive.Dir + chuckName, drive);
+                }
+
+                return fileHDD;
             }
 
             public void IncreaseVersion()
@@ -339,6 +383,13 @@ namespace VHSSD
                 return now;
             }
 
+            public void Sync(File file)
+            {
+                if (ramFile.Used)
+                    file.LinkRamFile(ramFile);
+            }
+
+            #endregion
 
             public bool InOperation = false;
 
@@ -348,10 +399,11 @@ namespace VHSSD
 
                 var file = BestDrive();
 
+                Sync(file);
+
                 if (onHDD)
                 {
-                    if (ramFile.Used)
-                        file.LinkRamFile(ramFile);
+                    
                 }
 
                 var res = file.Read(part.length, part.pos);
@@ -368,10 +420,24 @@ namespace VHSSD
                 inWrite = true;
 
                 var file = BestDrive();
+                bool writeToFile = true;
 
                 if (onHDD)
-                    ramFile.Write(bytes, part.pos);
-                else 
+                {
+                    // If you are writing the entire file, write directly to SSD
+                    if (part.pos == 0 && file.Length == part.length)
+                    {
+                        file = GetSSD();
+                        onHDD = false;
+                    }
+                    else
+                    {
+                        ramFile.Write(bytes, part.pos);
+                        writeToFile = false;
+                    }
+                }
+                
+                if(writeToFile)
                     file.Write(bytes, part.pos);
 
                 row.LastWrite = CalculateAvgUsage();
@@ -417,6 +483,8 @@ namespace VHSSD
                     from = fileSSD;
                     to = fileSSD;
                 }
+
+                Sync(from);
 
                 from.CopyTo(to);
 
