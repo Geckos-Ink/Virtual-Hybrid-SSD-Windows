@@ -383,12 +383,14 @@ namespace VHSSD
                 fs.SecurityDescription = attributes.SecurityDescription;
 
                 // Get file tree
-                if(isDirectory)
+                if (isDirectory)
+                {
                     fs.Files = new long[files.Keys.Count];
 
-                var f = 0;
-                foreach (var key in files.Keys)
-                    fs.Files[f] = files.Get(files.Keys[f++]).Value.ID;
+                    var f = 0;
+                    foreach (var key in files.Keys)
+                        fs.Files[f] = files.Get(files.Keys[f++]).Value.ID;
+                }
 
                 var tFS = vhfs.DB.GetType(typeof(DB.FS));
                 if (!tFS.CompareObjs(fs, lastFS))
