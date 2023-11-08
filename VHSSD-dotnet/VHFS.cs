@@ -273,6 +273,9 @@ namespace VHSSD
                     files = new Tree<File>();
 
                     attributes.FileAttributes = (uint)FileAttributes.Directory;
+
+                    if (id == 0)
+                        Load(); // it's root directory
                 }
             }
 

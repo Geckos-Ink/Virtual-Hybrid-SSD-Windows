@@ -134,6 +134,7 @@ namespace VHSSD
 
             public System.Type type;
             public System.Type originalType;
+            public System.Type elementType;
 
             public Member firstMember;
             public OrderedDictionary<string, Member> members;
@@ -202,6 +203,8 @@ namespace VHSSD
                 {
                     size = db.GetType(typeof(DataIndex)).size; //todo: cache DataIndex size
                     hasDynamicSize = true;
+
+                    elementType = type.GetElementType();
                 }
                 else if (type.IsClass || type.IsConstructedGenericType)
                 {
@@ -509,6 +512,18 @@ namespace VHSSD
 
                 public void Set(object obj, object val)
                 {
+                    if (type.type.IsArray)
+                    {
+                        var arr = (object[])val;
+                        Array convertedArray = Array.CreateInstance(type.type, arr.Length);
+                        for (int i = 0; i < arr.Length; i++)
+                        {
+                            // Perform the conversion using Convert.ChangeType
+                            object convertedValue = Convert.ChangeType(arr[i], type.elementType);
+                            convertedArray.SetValue(convertedValue, i);
+                        }
+                    }
+
                     info.SetValue(obj, val);
                 }
             }
