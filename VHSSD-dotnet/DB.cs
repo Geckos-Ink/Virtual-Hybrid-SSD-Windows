@@ -561,7 +561,7 @@ namespace VHSSD
 
             public long Get(T key)
             {
-                return GetAll(key).First();
+                return GetAll(key).FirstOrDefault();
             }
 
             public List<long> GetAll(T key)
@@ -989,7 +989,16 @@ namespace VHSSD
                         var keys = keysStack[r];
 
                         var rel = Relation[r];
-                        var val = (long)table.type.members[rel].Extract(row);
+                        var relMemb = table.type.members[rel];
+                        var vobj = relMemb.Extract(row);
+
+                        long val = 0;
+
+                        // Manual converting when necessary
+                        if (relMemb.type.type == typeof(short))
+                            val = (short)vobj;
+                        else
+                            val = (long)vobj;
 
                         if (r < Relation.Length - 1)
                         {

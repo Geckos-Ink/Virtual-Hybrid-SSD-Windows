@@ -261,7 +261,8 @@ namespace VHSSD
                 try
                 {
                     // Close iterate streams
-                    foreach (var stream in vhfs.DB.iterateStreams)
+                    var _iterateStreams = new List<DB.IterateStream>(vhfs.DB.iterateStreams);
+                    foreach (var stream in _iterateStreams)
                     {
                         stream.Save();
                     }
@@ -278,7 +279,7 @@ namespace VHSSD
                     // Close bytes tables
                     foreach (var table in vhfs.DB.bytesTables)
                     {
-                        table.Value.fileValues.Close();
+                        table.Value.fileValues?.Close();
                     }
 
                     // Close all drives
@@ -289,7 +290,10 @@ namespace VHSSD
 
                     isClosing = false;
                 }
-                catch { }
+                catch (Exception ex) 
+                {
+                    Console.WriteLine(ex.Message);
+                }
             }
         }
     }
