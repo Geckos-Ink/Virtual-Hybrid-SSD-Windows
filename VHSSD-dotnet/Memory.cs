@@ -47,22 +47,25 @@ namespace VHSSD
                 if (!String.IsNullOrEmpty(l.jumpTo))
                 {
                     var len = l.jumpTo.Length;
-                    if ((i + len + 1) <= key.Length && l.jumpTo == key.Substring(i + 1, len))
+                    if ((i + len) <= key.Length && l.jumpTo == key.Substring(i, len))
+                    {
                         i += len;
 
-                    if (key.Length - 1 == i)
-                        return l;
+                        if (key.Length == i)
+                            return l;
+                    }
+                    else
+                        return null;
                 }
-                else
-                {
-                    l = l.Get(key[i]);
 
-                    if (l == null)
-                        break;
+                l = l.Get(key[i]);
 
-                    if (key.Length - 1 == i)
-                        return l;
-                }
+                if (l == null)
+                    break;
+
+                if (key.Length - 1 == i)
+                    return l;
+                
             }
 
             return null;
