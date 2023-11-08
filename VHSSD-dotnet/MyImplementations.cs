@@ -10,6 +10,8 @@ namespace VHSSD
 {
     public static class Static
     {
+        public static bool DebugResetEnv = true;
+
         public static long UnixTimeMS
         {
             get
@@ -28,7 +30,18 @@ namespace VHSSD
 
         public static void CreateDirIfNotExists(string path)
         {
-            if (!Directory.Exists(path)) Directory.CreateDirectory(path);
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+            else
+            {
+                if (DebugResetEnv)
+                {
+                    Directory.Delete(path, true);
+                    Directory.CreateDirectory(path);
+                }
+            }
         }
     }
 
