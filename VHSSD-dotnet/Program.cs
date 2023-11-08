@@ -194,7 +194,7 @@ namespace VHSSD
 
                 FileNode = file;
                 FileDesc0 = file;
-                NormalizedName = FileName;
+                NormalizedName = default(string);
                 FileInfo = file.GetFileInfo();
                 return STATUS_SUCCESS;
 
@@ -216,7 +216,7 @@ namespace VHSSD
         {
             var file = (VHFS.File)FileDesc0;
 
-            if(ReplaceFileAttributes)
+            if(ReplaceFileAttributes) //todo: check if this could destroy FileAttributes
                 file.attributes.FileAttributes = FileAttributes;
 
             file.attributes.AllocationSize = AllocationSize;
