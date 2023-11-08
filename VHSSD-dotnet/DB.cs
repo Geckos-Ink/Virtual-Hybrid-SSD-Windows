@@ -1017,7 +1017,7 @@ namespace VHSSD
                             if (nextKeys == null || nextKeys.Count == 0)
                                 return null;
 
-                            var nk = new OrderedKeys<long>(table.db, prefix + "-" + path + "-" + nextKeys.First().ToString("X"));
+                            var nk = GetOK(prefix + "-" + path + "-" + nextKeys.First().ToString("X"));
                             keysStack.Add(nk);
                         }
 
