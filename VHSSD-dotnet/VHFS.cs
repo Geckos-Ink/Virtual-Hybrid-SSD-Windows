@@ -5,6 +5,7 @@ using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Net.Mime;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Security.Cryptography;
@@ -375,6 +376,8 @@ namespace VHSSD
 
                 fs.Name = name.ToCharArray();
 
+                fs.IsDirectory = isDirectory;
+
                 fs.FileAttributes = attributes.FileAttributes;
                 fs.GrantedAccess = attributes.GrantedAccess;
                 fs.LastAccessTime = attributes.LastAccessTime;
@@ -396,7 +399,7 @@ namespace VHSSD
                 }
 
                 var tFS = vhfs.DB.GetType(typeof(DB.FS));
-                if (!tFS.CompareObjs(fs, lastFS))
+                if (!tFS.CompareObjs(fs, lastFS) || true) // seems to not work
                 {
                     this.vhfs.TableFS.Set(fs);
                     lastFS = fs;

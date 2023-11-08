@@ -370,7 +370,7 @@ namespace VHSSD
 
                 if (0 == (CreateOptions & FILE_DIRECTORY_FILE))
                 {
-                    file = new VHFS.File(true);
+                    file = new VHFS.File(false);
 
                     file.attributes.SecurityDescription = SecurityDescriptor;
                     file.attributes.GrantedAccess = GrantedAccess;
@@ -378,7 +378,7 @@ namespace VHSSD
                 }
                 else
                 {
-                    file = new VHFS.File(false);
+                    file = new VHFS.File(true);
 
                     file.attributes.SecurityDescription = SecurityDescriptor;
                     file.attributes.FileAttributes = FileAttributes;

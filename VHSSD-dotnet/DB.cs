@@ -153,6 +153,7 @@ namespace VHSSD
 
             // Precached methods
             MethodInfo toArrayMethod;
+            MethodInfo toStringMethod;
 
             public Type(DB db, System.Type type)
             {
@@ -163,6 +164,7 @@ namespace VHSSD
                 if (type == typeof(string))
                 {
                     type = typeof(char[]);
+                    toStringMethod = type.GetMethod("ToString");
                     isString = true;
                 }
 
@@ -304,7 +306,7 @@ namespace VHSSD
 
                 if (isValue)
                 {
-                    if(type ==  typeof(byte))
+                    if(type == typeof(byte))
                         return BitConverter.GetBytes((byte)obj);
 
                     if (type == typeof(char))
@@ -397,7 +399,7 @@ namespace VHSSD
                         return Activator.CreateInstance(type); // return default value
 
                     if(type == typeof(char)) 
-                        return Convert.ToChar(bytes);
+                        return Encoding.UTF8.GetString(bytes)[0];
 
                     if (type == typeof(bool))
                         return BitConverter.ToBoolean(bytes, 0);
@@ -460,6 +462,9 @@ namespace VHSSD
 
                         var arr = list.ToArray();
 
+                        if(isString)
+                            return toStringMethod.Invoke(arr, new object[] { });
+
                         return arr;
                     }
                     else
@@ -513,7 +518,7 @@ namespace VHSSD
                 public void Set(object obj, object val)
                 {
                     // Force array casting when necessary
-                    if (type.type.IsArray && !type.isList && val.GetType().GetElementType() != type.elementType)
+                    if (!type.isString && type.type.IsArray && !type.isList && val.GetType().GetElementType() != type.elementType)
                     {
                         var arr = (object[])val;
                         Array convertedArray = Array.CreateInstance(type.elementType, arr.Length);
@@ -1246,6 +1251,8 @@ namespace VHSSD
 
                 var bytes = type.ObjToBytes(row);
                 index = bytesTable.Set(bytes, index);
+
+                row.AbsIndex = index;
 
                 foreach(var key in Keys)
                     key.Set(row, index);
