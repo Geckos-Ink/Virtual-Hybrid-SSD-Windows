@@ -383,7 +383,8 @@ namespace VHSSD
                 fs.SecurityDescription = attributes.SecurityDescription;
 
                 // Get file tree
-                fs.Files = new long[files.Keys.Count];
+                if(isDirectory)
+                    fs.Files = new long[files.Keys.Count];
 
                 var f = 0;
                 foreach (var key in files.Keys)
