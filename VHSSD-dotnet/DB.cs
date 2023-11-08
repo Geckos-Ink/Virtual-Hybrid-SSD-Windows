@@ -512,16 +512,19 @@ namespace VHSSD
 
                 public void Set(object obj, object val)
                 {
-                    if (type.type.IsArray)
+                    // Force array casting when necessary
+                    if (type.type.IsArray && !type.isList && val.GetType().GetElementType() != type.elementType)
                     {
                         var arr = (object[])val;
-                        Array convertedArray = Array.CreateInstance(type.type, arr.Length);
+                        Array convertedArray = Array.CreateInstance(type.elementType, arr.Length);
                         for (int i = 0; i < arr.Length; i++)
                         {
                             // Perform the conversion using Convert.ChangeType
                             object convertedValue = Convert.ChangeType(arr[i], type.elementType);
                             convertedArray.SetValue(convertedValue, i);
                         }
+
+                        val = convertedArray;
                     }
 
                     info.SetValue(obj, val);
