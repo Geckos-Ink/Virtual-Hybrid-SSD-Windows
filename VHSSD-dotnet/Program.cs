@@ -842,11 +842,15 @@ namespace VHSSD
         }
         protected override void OnStop()
         {
+            if (_Host == null) return;
+
             _Host.Unmount();
             _Host = null;
 
             vhfs.Close();
             Console.WriteLine("VHFS Closed.");
+
+            System.Environment.Exit(0);
         }
 
         private static void argtos(String[] Args, ref int I, ref String V)

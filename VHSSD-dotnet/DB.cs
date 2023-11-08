@@ -198,8 +198,12 @@ namespace VHSSD
                 this.type = type;
 
                 name = type.Name;
-
-                if (type.IsClass || type.IsConstructedGenericType)
+                if (type.IsArray)
+                {
+                    size = db.GetType(typeof(DataIndex)).size; //todo: cache DataIndex size
+                    hasDynamicSize = true;
+                }
+                else if (type.IsClass || type.IsConstructedGenericType)
                 {
                     this.members = new OrderedDictionary<string, Member>();
 
@@ -220,28 +224,18 @@ namespace VHSSD
                         size += m.size;
                     }
                 }
-                else
+                else if (type.IsValueType)
                 {
-                    if (!type.IsArray) {
-                        if (type.IsValueType)
-                        {
-                            isValue = true;
+                    isValue = true;
 
-                            // Better to obtain the size empirically
-                            var def = Activator.CreateInstance(type);
-                            var bytes = ObjToBytes(def);
+                    // Better to obtain the size empirically
+                    var def = Activator.CreateInstance(type);
+                    var bytes = ObjToBytes(def);
 
-                            size = bytes.Length; // Marshal.SizeOf(type);
-                        }
-                        else
-                            throw new Exception("What is das?");
-                    }
-                    else
-                    {
-                        size = db.GetType(typeof(DataIndex)).size; //todo: cache DataIndex size
-                        hasDynamicSize = true;
-                    }
+                    size = bytes.Length; // Marshal.SizeOf(type);
                 }
+                else
+                    throw new Exception("What is das?");
             }
 
             public bool CompareObjs(object obj1, object obj2)
@@ -448,7 +442,7 @@ namespace VHSSD
 
                         var arrayOf = db.GetType(type.GetElementType());
                         List<object> list = new List<object>();
-                        for(int i = 0; i< allBytes.Length; i++)
+                        for(int i = 0; i< allBytes.Length; i+= arrayOf.size)
                         {
                             var itemData = allBytes.Skip(i).Take(arrayOf.size).ToArray();
                             var obj = arrayOf.BytesToObject(itemData);
