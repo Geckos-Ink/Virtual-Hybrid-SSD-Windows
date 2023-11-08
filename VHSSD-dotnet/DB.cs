@@ -152,7 +152,6 @@ namespace VHSSD
 
             // Precached methods
             MethodInfo toArrayMethod;
-            MethodInfo toListMethod;
 
             public Type(DB db, System.Type type)
             {
@@ -182,7 +181,6 @@ namespace VHSSD
                         type = t.MakeArrayType();
 
                         toArrayMethod = originalType.GetMethod("ToArray");
-                        toListMethod = type.GetMethod("ToList");
                     }
 
                     if (isDictionary)
@@ -275,6 +273,32 @@ namespace VHSSD
 
                 return true;
             }
+
+            #region ReflectedCast
+
+            private static List<T> ConvertList<T>(List<object> inputList)
+            {
+                return inputList.OfType<T>().ToList();
+            }
+
+            MethodInfo toListMethod;
+
+            object toList(List<object> list) // doesn't work
+            {
+                var baseType = iterateTypes[0];
+
+                if (toListMethod == null)
+                {
+                    toListMethod = typeof(Type)
+                    .GetMethod(nameof(ConvertList), BindingFlags.Static | BindingFlags.NonPublic)
+                    .MakeGenericMethod(baseType);
+                }
+
+                // Call the generic method to convert List<object> to List<long>
+                return toListMethod.Invoke(null, new object[] { list });
+            }
+
+            #endregion
 
             public byte[] ObjToBytes (object obj)
             {
@@ -434,14 +458,10 @@ namespace VHSSD
                         if (isString)
                             return new String(list.Select(o => (char)o).ToArray());
 
-                        var arr = list.ToArray();
-
                         if (isList)
-                        {
-                            // Convert array to list (yes a little twisted)
-                            object[] parameters = new object[] { };
-                            return toListMethod.Invoke(arr, parameters);
-                        }
+                            return toList(list);
+
+                        var arr = list.ToArray();
 
                         return arr;
                     }
