@@ -892,6 +892,11 @@ namespace VHSSD
                     CloseOKs(true);
                 }
 
+                /// <summary>
+                /// This method returns the unique OrderedKeys possible
+                /// </summary>
+                /// <returns></returns>
+                /// <exception cref="Exception">If more Keys are possible</exception>
                 public OrderedKeys<long> GetOrderedKeys()
                 {
                     if (Relation.Length != 1)
