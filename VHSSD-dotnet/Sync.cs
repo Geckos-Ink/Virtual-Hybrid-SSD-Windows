@@ -256,31 +256,40 @@ namespace VHSSD
             while (IsActive)
                 Thread.Sleep(1);
 
-            // Close iterate streams
-            foreach(var stream in vhfs.DB.iterateStreams)
+            while (isClosing)
             {
-                stream.Save();
-            }
-
-            // Close chucks
-            foreach (var idChucks in vhfs.chucks.chucks)
-            {
-                foreach (var chuck in idChucks.Value)
+                try
                 {
-                    chuck.Value.Close();
+                    // Close iterate streams
+                    foreach (var stream in vhfs.DB.iterateStreams)
+                    {
+                        stream.Save();
+                    }
+
+                    // Close chucks
+                    foreach (var idChucks in vhfs.chucks.chucks)
+                    {
+                        foreach (var chuck in idChucks.Value)
+                        {
+                            chuck.Value.Close();
+                        }
+                    }
+
+                    // Close bytes tables
+                    foreach (var table in vhfs.DB.bytesTables)
+                    {
+                        table.Value.fileValues.Close();
+                    }
+
+                    // Close all drives
+                    foreach (var drive in vhfs.AllDrives)
+                    {
+                        drive.Close();
+                    }
+
+                    isClosing = false;
                 }
-            }
-
-            // Close bytes tables
-            foreach(var table in vhfs.DB.bytesTables)
-            {
-                table.Value.fileValues.Close();
-            }
-
-            // Close all drives
-            foreach(var drive in vhfs.AllDrives)
-            {
-                drive.Close();
+                catch { }
             }
         }
     }
