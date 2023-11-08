@@ -307,7 +307,7 @@ namespace VHSSD
 
             public bool loaded = false;
 
-            void Load(bool lazy=false)
+            public void Load(bool lazy=false)
             {
                 if (loaded) return;
 

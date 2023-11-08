@@ -191,9 +191,11 @@ namespace VHSSD
 
             try
             {
-                FileNode = default(Object);
+                file.Load();
+
+                FileNode = file;
                 FileDesc0 = file;
-                NormalizedName = default(String);
+                NormalizedName = FileName;
                 FileInfo = file.GetFileInfo();
                 return STATUS_SUCCESS;
 
