@@ -56,7 +56,7 @@ namespace VHSSD
 
                 part.part = pos / vhfs.Sets.chuckSize;
                 part.pos = pos % vhfs.Sets.chuckSize;
-                part.length = vhfs.Sets.chuckSize - part.pos;
+                part.length = (pos + length) % vhfs.Sets.chuckSize;
 
                 parts.Add(part);
 
