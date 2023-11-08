@@ -245,7 +245,7 @@ namespace VHSSD
 
             public bool CompareObjs(object obj1, object obj2)
             {
-                if (type.IsValueType)
+                if (type.IsValueType || isString)
                 {
                     return obj1 == obj2;
                 }
@@ -1371,7 +1371,7 @@ namespace VHSSD
             public long ID;
             public long Parent;
 
-            public char[] Name;
+            public string Name;
 
             public bool IsDirectory;
             public long[] Files;

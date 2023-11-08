@@ -375,7 +375,7 @@ namespace VHSSD
                 fs.ID = ID;
                 fs.Parent = parent != null ? parent.ID : -1;
 
-                fs.Name = name.ToCharArray();
+                fs.Name = name;
 
                 fs.IsDirectory = isDirectory;
 
