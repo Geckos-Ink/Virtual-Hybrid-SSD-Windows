@@ -325,9 +325,6 @@ namespace VHSSD
                 name = fs.Name.ToString();
                 isDirectory = fs.IsDirectory;
 
-                if (!isDirectory)
-                    Console.WriteLine("debug file");
-
                 attributes.FileAttributes = fs.FileAttributes;
                 attributes.GrantedAccess = fs.GrantedAccess;
                 attributes.LastAccessTime = fs.LastAccessTime;
@@ -336,7 +333,7 @@ namespace VHSSD
                 attributes.ChangeTime = fs.ChangeTime;
                 attributes.CreationTime = fs.CreationTime;
                 attributes.FileSize = fs.FileSize;
-                attributes.SecurityDescription = fs.SecurityDescription;
+                //attributes.SecurityDescription = fs.SecurityDescription; // FUCK YOU 
 
                 lastFS = fs.Clone<DB.FS>();
 
@@ -401,9 +398,6 @@ namespace VHSSD
                     foreach (var key in files.Keys)
                         fs.Files[f] = files.Get(files.Keys[f++]).Value.ID;
                 }
-
-                if (!isDirectory)
-                    Console.WriteLine("debug file");
 
                 var tFS = vhfs.DB.GetType(typeof(DB.FS));
                 if (!tFS.CompareObjs(fs, lastFS) || true) // seems to not work

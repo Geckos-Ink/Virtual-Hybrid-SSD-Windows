@@ -186,7 +186,6 @@ namespace VHSSD
             out String NormalizedName)
         {
 
-            //FileName = ConcatPath(FileName);
             var file = vhfs.GetFile(FileName);
 
             try
@@ -319,11 +318,16 @@ namespace VHSSD
         {
             var file = (VHFS.File)FileDesc0;
 
-            file.attributes.FileAttributes = FileAttributes;
-            file.attributes.CreationTime = CreationTime;
-            file.attributes.LastAccessTime = LastAccessTime;
-            file.attributes.LastWriteTime = LastWriteTime;
-            file.attributes.ChangeTime = ChangeTime;
+            if (unchecked((UInt32)(-1)) != FileAttributes)
+                file.attributes.FileAttributes = FileAttributes;
+            if (0 != CreationTime)
+                file.attributes.CreationTime = CreationTime;
+            if (0 != LastAccessTime)
+                file.attributes.LastAccessTime = LastAccessTime;
+            if (0 != LastWriteTime)
+                file.attributes.LastWriteTime = LastWriteTime;
+            if (0 != ChangeTime)
+                file.attributes.ChangeTime = ChangeTime;
 
             FileInfo = file.GetFileInfo();
 
