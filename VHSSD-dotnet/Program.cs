@@ -36,231 +36,6 @@ namespace VHSSD
             ThrowIoExceptionWithWin32((Int32)Win32FromNtStatus(Status));
         }
 
-        public class FileDesc
-        {
-            public FileStream Stream;
-            public DirectoryInfo DirInfo;
-            public DictionaryEntry[] FileSystemInfos;
-
-            public FileDesc(FileStream Stream)
-            {
-                this.Stream = Stream;
-            }
-            public FileDesc(DirectoryInfo DirInfo)
-            {
-                this.DirInfo = DirInfo;
-            }
-            public static void GetFileInfoFromFileSystemInfo(
-                FileSystemInfo Info,
-                out FileInfo FileInfo)
-            {
-                FileInfo.FileAttributes = (UInt32)Info.Attributes;
-                FileInfo.ReparseTag = 0;
-                FileInfo.FileSize = Info is System.IO.FileInfo ?
-                    (UInt64)((System.IO.FileInfo)Info).Length : 0;
-                FileInfo.AllocationSize = (FileInfo.FileSize + ALLOCATION_UNIT - 1)
-                    / ALLOCATION_UNIT * ALLOCATION_UNIT;
-                FileInfo.CreationTime = (UInt64)Info.CreationTimeUtc.ToFileTimeUtc();
-                FileInfo.LastAccessTime = (UInt64)Info.LastAccessTimeUtc.ToFileTimeUtc();
-                FileInfo.LastWriteTime = (UInt64)Info.LastWriteTimeUtc.ToFileTimeUtc();
-                FileInfo.ChangeTime = FileInfo.LastWriteTime;
-                FileInfo.IndexNumber = 0;
-                FileInfo.HardLinks = 0;
-            }
-            public Int32 GetFileInfo(out FileInfo FileInfo)
-            {
-                if (null != Stream)
-                {
-                    BY_HANDLE_FILE_INFORMATION Info;
-                    if (!GetFileInformationByHandle(Stream.SafeFileHandle.DangerousGetHandle(),
-                        out Info))
-                        ThrowIoExceptionWithWin32(Marshal.GetLastWin32Error());
-
-                    FileInfo.FileAttributes = Info.dwFileAttributes;
-                    FileInfo.ReparseTag = 0;
-                    FileInfo.FileSize = (UInt64)Stream.Length;
-                    FileInfo.AllocationSize = (FileInfo.FileSize + ALLOCATION_UNIT - 1)
-                        / ALLOCATION_UNIT * ALLOCATION_UNIT;
-                    FileInfo.CreationTime = Info.ftCreationTime;
-                    FileInfo.LastAccessTime = Info.ftLastAccessTime;
-                    FileInfo.LastWriteTime = Info.ftLastWriteTime;
-                    FileInfo.ChangeTime = FileInfo.LastWriteTime;
-                    FileInfo.IndexNumber = 0;
-                    FileInfo.HardLinks = 0;
-                }
-                else
-                    GetFileInfoFromFileSystemInfo(DirInfo, out FileInfo);
-                return STATUS_SUCCESS;
-            }
-            public void SetBasicInfo(
-                UInt32 FileAttributes,
-                UInt64 CreationTime,
-                UInt64 LastAccessTime,
-                UInt64 LastWriteTime)
-            {
-                if (0 == FileAttributes)
-                    FileAttributes = (UInt32)System.IO.FileAttributes.Normal;
-                if (null != Stream)
-                {
-                    FILE_BASIC_INFO Info = default(FILE_BASIC_INFO);
-                    if (unchecked((UInt32)(-1)) != FileAttributes)
-                        Info.FileAttributes = FileAttributes;
-                    if (0 != CreationTime)
-                        Info.CreationTime = CreationTime;
-                    if (0 != LastAccessTime)
-                        Info.LastAccessTime = LastAccessTime;
-                    if (0 != LastWriteTime)
-                        Info.LastWriteTime = LastWriteTime;
-                    if (!SetFileInformationByHandle(Stream.SafeFileHandle.DangerousGetHandle(),
-                        0/*FileBasicInfo*/, ref Info, (UInt32)Marshal.SizeOf(Info)))
-                        ThrowIoExceptionWithWin32(Marshal.GetLastWin32Error());
-                }
-                else
-                {
-                    if (unchecked((UInt32)(-1)) != FileAttributes)
-                        DirInfo.Attributes = (System.IO.FileAttributes)FileAttributes;
-                    if (0 != CreationTime)
-                        DirInfo.CreationTimeUtc = DateTime.FromFileTimeUtc((Int64)CreationTime);
-                    if (0 != LastAccessTime)
-                        DirInfo.LastAccessTimeUtc = DateTime.FromFileTimeUtc((Int64)LastAccessTime);
-                    if (0 != LastWriteTime)
-                        DirInfo.LastWriteTimeUtc = DateTime.FromFileTimeUtc((Int64)LastWriteTime);
-                }
-            }
-            public UInt32 GetFileAttributes()
-            {
-                FileInfo FileInfo;
-                GetFileInfo(out FileInfo);
-                return FileInfo.FileAttributes;
-            }
-            public void SetFileAttributes(UInt32 FileAttributes)
-            {
-                SetBasicInfo(FileAttributes, 0, 0, 0);
-            }
-            public Byte[] GetSecurityDescriptor()
-            {
-                if (null != Stream)
-                    return Stream.GetAccessControl().GetSecurityDescriptorBinaryForm();
-                else
-                    return DirInfo.GetAccessControl().GetSecurityDescriptorBinaryForm();
-            }
-            public void SetSecurityDescriptor(AccessControlSections Sections, Byte[] SecurityDescriptor)
-            {
-                Int32 SecurityInformation = 0;
-                if (0 != (Sections & AccessControlSections.Owner))
-                    SecurityInformation |= 1/*OWNER_SECURITY_INFORMATION*/;
-                if (0 != (Sections & AccessControlSections.Group))
-                    SecurityInformation |= 2/*GROUP_SECURITY_INFORMATION*/;
-                if (0 != (Sections & AccessControlSections.Access))
-                    SecurityInformation |= 4/*DACL_SECURITY_INFORMATION*/;
-                if (0 != (Sections & AccessControlSections.Audit))
-                    SecurityInformation |= 8/*SACL_SECURITY_INFORMATION*/;
-                if (null != Stream)
-                {
-                    if (!SetKernelObjectSecurity(Stream.SafeFileHandle.DangerousGetHandle(),
-                        SecurityInformation, SecurityDescriptor))
-                        ThrowIoExceptionWithWin32(Marshal.GetLastWin32Error());
-                }
-                else
-                {
-                    if (!SetFileSecurityW(DirInfo.FullName,
-                        SecurityInformation, SecurityDescriptor))
-                        ThrowIoExceptionWithWin32(Marshal.GetLastWin32Error());
-                }
-            }
-            public void SetDisposition(Boolean Safe)
-            {
-                if (null != Stream)
-                {
-                    FILE_DISPOSITION_INFO Info;
-                    Info.DeleteFile = true;
-                    if (!SetFileInformationByHandle(Stream.SafeFileHandle.DangerousGetHandle(),
-                        4/*FileDispositionInfo*/, ref Info, (UInt32)Marshal.SizeOf(Info)))
-                        if (!Safe)
-                            ThrowIoExceptionWithWin32(Marshal.GetLastWin32Error());
-                }
-                else
-                    try
-                    {
-                        DirInfo.Delete();
-                    }
-                    catch (Exception ex)
-                    {
-                        if (!Safe)
-                            ThrowIoExceptionWithHResult(ex.HResult);
-                    }
-            }
-            public static void Rename(String FileName, String NewFileName, Boolean ReplaceIfExists)
-            {
-                if (!MoveFileExW(FileName, NewFileName, ReplaceIfExists ? 1U/*MOVEFILE_REPLACE_EXISTING*/ : 0))
-                    ThrowIoExceptionWithWin32(Marshal.GetLastWin32Error());
-            }
-
-            /* interop */
-            [StructLayout(LayoutKind.Sequential, Pack = 4)]
-            private struct BY_HANDLE_FILE_INFORMATION
-            {
-                public UInt32 dwFileAttributes;
-                public UInt64 ftCreationTime;
-                public UInt64 ftLastAccessTime;
-                public UInt64 ftLastWriteTime;
-                public UInt32 dwVolumeSerialNumber;
-                public UInt32 nFileSizeHigh;
-                public UInt32 nFileSizeLow;
-                public UInt32 nNumberOfLinks;
-                public UInt32 nFileIndexHigh;
-                public UInt32 nFileIndexLow;
-            }
-            [StructLayout(LayoutKind.Sequential)]
-            private struct FILE_BASIC_INFO
-            {
-                public UInt64 CreationTime;
-                public UInt64 LastAccessTime;
-                public UInt64 LastWriteTime;
-                public UInt64 ChangeTime;
-                public UInt32 FileAttributes;
-            }
-            [StructLayout(LayoutKind.Sequential)]
-            private struct FILE_DISPOSITION_INFO
-            {
-                public Boolean DeleteFile;
-            }
-
-            
-            [DllImport("kernel32.dll", SetLastError = true)]
-            private static extern Boolean GetFileInformationByHandle(
-                IntPtr hFile,
-                out BY_HANDLE_FILE_INFORMATION lpFileInformation);
-            [DllImport("kernel32.dll", SetLastError = true)]
-            private static extern Boolean SetFileInformationByHandle(
-                IntPtr hFile,
-                Int32 FileInformationClass,
-                ref FILE_BASIC_INFO lpFileInformation,
-                UInt32 dwBufferSize);
-            [DllImport("kernel32.dll", SetLastError = true)]
-            private static extern Boolean SetFileInformationByHandle(
-                IntPtr hFile,
-                Int32 FileInformationClass,
-                ref FILE_DISPOSITION_INFO lpFileInformation,
-                UInt32 dwBufferSize);
-            [DllImport("kernel32.dll", SetLastError = true)]
-            private static extern Boolean MoveFileExW(
-                [MarshalAs(UnmanagedType.LPWStr)] String lpExistingFileName,
-                [MarshalAs(UnmanagedType.LPWStr)] String lpNewFileName,
-                UInt32 dwFlags);
-            [DllImport("advapi32.dll", SetLastError = true)]
-            private static extern Boolean SetFileSecurityW(
-                [MarshalAs(UnmanagedType.LPWStr)] String FileName,
-                Int32 SecurityInformation,
-                Byte[] SecurityDescriptor);
-            [DllImport("advapi32.dll", SetLastError = true)]
-            private static extern Boolean SetKernelObjectSecurity(
-                IntPtr Handle,
-                Int32 SecurityInformation,
-                Byte[] SecurityDescriptor);
-            
-        }
-
         private class DirectoryEntryComparer : IComparer
         {
             public int Compare(object x, object y)
@@ -361,7 +136,6 @@ namespace VHSSD
             out FileInfo FileInfo,
             out String NormalizedName)
         {
-            FileDesc FileDesc = null;
             try
             {
                 //FileName = ConcatPath(FileName);
@@ -384,6 +158,8 @@ namespace VHSSD
                     file.attributes.FileAttributes = FileAttributes;
                 }
 
+                file.loaded = true;
+
                 vhfs.AddFile(file, FileName);
 
                 FileNode = default(Object);
@@ -393,11 +169,10 @@ namespace VHSSD
 
                 return STATUS_SUCCESS;
             }
-            catch
+            catch(Exception ex)
             {
-                if (null != FileDesc && null != FileDesc.Stream)
-                    FileDesc.Stream.Dispose();
-                throw;
+                //todo: save everything
+                throw ex;
             }
         }
 
@@ -412,7 +187,6 @@ namespace VHSSD
         {
 
             //FileName = ConcatPath(FileName);
-            Console.WriteLine("Open path: "+  FileName);
             var file = vhfs.GetFile(FileName);
 
             try
@@ -439,15 +213,16 @@ namespace VHSSD
             UInt64 AllocationSize,
             out FileInfo FileInfo)
         {
-            FileDesc FileDesc = (FileDesc)FileDesc0;
-            if (ReplaceFileAttributes)
-                FileDesc.SetFileAttributes(FileAttributes |
-                    (UInt32)System.IO.FileAttributes.Archive);
-            else if (0 != FileAttributes)
-                FileDesc.SetFileAttributes(FileDesc.GetFileAttributes() | FileAttributes |
-                    (UInt32)System.IO.FileAttributes.Archive);
-            FileDesc.Stream.SetLength(0);
-            return FileDesc.GetFileInfo(out FileInfo);
+            var file = (VHFS.File)FileDesc0;
+
+            if(ReplaceFileAttributes)
+                file.attributes.FileAttributes = FileAttributes;
+
+            file.attributes.AllocationSize = AllocationSize;
+
+            FileInfo = file.GetFileInfo();
+
+            return STATUS_SUCCESS;
         }
 
         public override void Cleanup(

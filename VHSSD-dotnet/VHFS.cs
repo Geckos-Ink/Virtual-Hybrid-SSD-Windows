@@ -275,7 +275,7 @@ namespace VHSSD
 
                     attributes.FileAttributes = (uint)FileAttributes.Directory;
 
-                    if (id == 0)
+                    if (id == 0) 
                         Load(); // it's root directory
                 }
             }
@@ -305,7 +305,8 @@ namespace VHSSD
 
             DB.FS lastFS;
 
-            bool loaded = false;
+            public bool loaded = false;
+
             void Load(bool lazy=false)
             {
                 if (loaded) return;
@@ -323,6 +324,9 @@ namespace VHSSD
 
                 name = fs.Name.ToString();
                 isDirectory = fs.IsDirectory;
+
+                if (!isDirectory)
+                    Console.WriteLine("debug file");
 
                 attributes.FileAttributes = fs.FileAttributes;
                 attributes.GrantedAccess = fs.GrantedAccess;
@@ -397,6 +401,9 @@ namespace VHSSD
                     foreach (var key in files.Keys)
                         fs.Files[f] = files.Get(files.Keys[f++]).Value.ID;
                 }
+
+                if (!isDirectory)
+                    Console.WriteLine("debug file");
 
                 var tFS = vhfs.DB.GetType(typeof(DB.FS));
                 if (!tFS.CompareObjs(fs, lastFS) || true) // seems to not work
@@ -509,6 +516,8 @@ namespace VHSSD
 
             public Fsp.Interop.FileInfo GetFileInfo()
             {
+                Load(true);
+
                 var res = new Fsp.Interop.FileInfo();
 
                 res.FileAttributes = attributes.FileAttributes;
