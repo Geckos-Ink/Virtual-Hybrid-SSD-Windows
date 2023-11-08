@@ -89,11 +89,7 @@ namespace VHSSD
             {
                 if (!String.IsNullOrEmpty(l.jumpTo))
                 {
-                    if(l.jumpTo == lkey.Substring(i, l.jumpTo.Length))
-                    {
-                        i += l.jumpTo.Length;
-                    }
-                    else
+                    if(l.jumpTo != lkey.Substring(i, l.jumpTo.Length))
                     {
                         int j = 0;
                         for (; j < l.jumpTo.Length; j++)
@@ -102,14 +98,23 @@ namespace VHSSD
                                 break;
                         }
 
-                        var div = l.jumpTo.Substring(j);
-                        l.jumpTo = l.jumpTo.Substring(0, l.jumpTo.Length-j);
+                        var div = l.jumpTo.Substring(j, l.jumpTo.Length - j);
+                        l.jumpTo = l.jumpTo.Substring(0, j);
 
-                        var tdiv = new Tree<T>(this, div[0]);
+                        var tdiv = new Tree<T>(l, div[0]);
                         tdiv.Value = l.Value;
-                       
+                        tdiv.jumpTo = div.Length > 1 ? div.Substring(1) : "";
+
                         l.Value = default(T);
-                    }
+                    }  
+
+                    i += l.jumpTo.Length;
+                }
+
+                if(l.tree == null || l.tree.Count == 0)
+                {
+                    l.jumpTo = lkey.Substring(i);
+                    break;
                 }
 
                 var k = lkey[i];
