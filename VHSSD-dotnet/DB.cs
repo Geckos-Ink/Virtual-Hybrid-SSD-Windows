@@ -372,6 +372,9 @@ namespace VHSSD
             {
                 if(type.IsValueType)
                 {
+                    if(bytes == null || bytes.Length == 0) 
+                        return Activator.CreateInstance(type); // return default value
+
                     if(type == typeof(char)) 
                         return Convert.ToChar(bytes);
 
