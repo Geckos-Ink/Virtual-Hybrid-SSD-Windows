@@ -48,7 +48,7 @@ namespace VHSSD
             long reach = pos + length;
 
             Part part;
-            while (pos <= reach)
+            while (pos < reach)
             {
                 part = new Part();
 
@@ -56,11 +56,15 @@ namespace VHSSD
 
                 part.part = pos / vhfs.Sets.chuckSize;
                 part.pos = pos % vhfs.Sets.chuckSize;
-                part.length = (pos + length) % vhfs.Sets.chuckSize;
+
+                part.length = (reach - pos);
+                if (part.length > vhfs.Sets.chuckSize)
+                    part.length = vhfs.Sets.chuckSize;
 
                 parts.Add(part);
 
                 pos += part.length;
+                length -= part.length;
             }
 
             part.length = (pos + length) % vhfs.Sets.chuckSize;
@@ -210,8 +214,8 @@ namespace VHSSD
 
                 if (row != null)
                     this.row = row;
-                else
-                    LoadRow();
+                
+                LoadRow();
 
                 LastUsage = Static.UnixTimeMS;
 
