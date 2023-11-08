@@ -87,36 +87,48 @@ namespace VHSSD
             var l = this;
             for (int i = 0; i < lkey.Length; i++)
             {
-                if (l.tree == null && String.IsNullOrEmpty(l.jumpTo))
+                if (!String.IsNullOrEmpty(l.jumpTo))
                 {
-                    l.jumpTo = lkey.Substring(i);
-                    break;
-                }
-                else
-                {
-                    if (!String.IsNullOrEmpty(l.jumpTo))
+                    if(l.jumpTo == lkey.Substring(i, l.jumpTo.Length))
                     {
-                        l.tree = new Dictionary<char, Tree<T>>();
-                        var jt = l.jumpTo;
-                        l.jumpTo = null;
-                        l.Set(jt, l.Value);
+                        i += l.jumpTo.Length;
+                    }
+                    else
+                    {
+                        int j = 0;
+                        for (; j < l.jumpTo.Length; j++)
+                        {
+                            if (jumpTo[j] != lkey[i + j])
+                                break;
+                        }
+
+                        var div = l.jumpTo.Substring(j);
+                        l.jumpTo = l.jumpTo.Substring(0, l.jumpTo.Length-j);
+
+                        var tdiv = new Tree<T>(this, div[0]);
+                        tdiv.Value = l.Value;
+                       
                         l.Value = default(T);
                     }
-
-                    var nextL = l.Get(lkey[i]);
-
-                    if (nextL == null)
-                    {
-                        nextL = new Tree<T>(l, lkey[i]);
-                        l = nextL;
-                    }
                 }
+
+                var k = lkey[i];
+                var nextL = l.Get(lkey[i]);
+
+                if (nextL == null)
+                {
+                    nextL = new Tree<T>(l, lkey[i]);
+                    l = nextL;
+                }
+
+                if (l.level == i)
+                    break;
             }
 
-            if(!Keys.Contains(key))
-                Keys.Add(key);
-
             l.Value = value;
+
+            if (!Keys.Contains(key))
+                Keys.Add(key);
         }
 
 
