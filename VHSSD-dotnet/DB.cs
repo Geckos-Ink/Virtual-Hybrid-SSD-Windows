@@ -724,7 +724,7 @@ namespace VHSSD
 
             Type keyValueType;
 
-            struct KeyValue<TT, VV>
+            class KeyValue<TT, VV>
             {
                 public TT Key;
                 public VV Value;
@@ -759,7 +759,8 @@ namespace VHSSD
                 for (long r = 0; r < numRow; r++)
                 {
                     var rowData = data.Skip(pos).Take(size).ToArray();
-                    var kv = (KeyValue<T,V>)keyValueType.BytesToObject(rowData);
+                    var obj = keyValueType.BytesToObject(rowData);
+                    var kv = (KeyValue<T, V>)obj;
 
                     dict.Add(kv.Key, kv.Value);
 
