@@ -335,11 +335,12 @@ namespace VHSSD
                 attributes.FileSize = fs.FileSize;
                 attributes.SecurityDescription = fs.SecurityDescription;
 
+                lastFS = fs.Clone<DB.FS>();
+
                 /// Load tree
-                if(!lazy)
+                if (!lazy)
                     LoadFiles();
 
-                lastFS = fs.Clone<DB.FS>();
                 loaded = true;
             }
 
