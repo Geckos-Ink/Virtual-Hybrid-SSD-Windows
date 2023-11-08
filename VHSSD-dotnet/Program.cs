@@ -370,7 +370,7 @@ namespace VHSSD
 
                 if (0 == (CreateOptions & FILE_DIRECTORY_FILE))
                 {
-                    file = new VHFS.File(false);
+                    file = new VHFS.File(true);
 
                     file.attributes.SecurityDescription = SecurityDescriptor;
                     file.attributes.GrantedAccess = GrantedAccess;
@@ -481,7 +481,7 @@ namespace VHSSD
         {
             var file = (VHFS.File)FileDesc0;
 
-            if (Offset >= (UInt64)file.attributes.FileSize)
+            if (Offset > (UInt64)file.attributes.FileSize)
                 ThrowIoExceptionWithNtStatus(STATUS_END_OF_FILE);
 
             file.Read(Buffer, Offset, Length, out PBytesTransferred);

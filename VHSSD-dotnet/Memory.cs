@@ -79,8 +79,6 @@ namespace VHSSD
 
         public void Set(string key, T value)
         {
-            bool exists = true;
-
             var lkey = key.ToLower();
 
             var l = this;
@@ -106,14 +104,13 @@ namespace VHSSD
 
                     if (nextL == null)
                     {
-                        exists = false;
                         nextL = new Tree<T>(l, lkey[i]);
                         l = nextL;
                     }
                 }
             }
 
-            if(!exists)
+            if(!Keys.Contains(key))
                 Keys.Add(key);
 
             l.Value = value;
