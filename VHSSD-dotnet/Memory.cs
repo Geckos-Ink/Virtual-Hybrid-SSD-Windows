@@ -89,7 +89,11 @@ namespace VHSSD
             {
                 if (!String.IsNullOrEmpty(l.jumpTo))
                 {
-                    if(l.jumpTo != lkey.Substring(i, l.jumpTo.Length))
+                    var maxLen = lkey.Length - i;
+                    var upTo = l.jumpTo.Length;
+                    if(upTo > maxLen) upTo = maxLen;
+
+                    if (l.jumpTo != lkey.Substring(i, upTo))
                     {
                         int j = 0;
                         for (; j < l.jumpTo.Length; j++)
@@ -108,7 +112,10 @@ namespace VHSSD
                         l.Value = default(T);
                     }  
 
-                    i += l.jumpTo.Length;
+                    i += l.jumpTo?.Length ?? 0;
+
+                    if (i == lkey.Length)
+                        break;
                 }
 
                 if(l.tree == null || l.tree.Count == 0)
@@ -118,16 +125,12 @@ namespace VHSSD
                 }
 
                 var k = lkey[i];
-                var nextL = l.Get(lkey[i]);
+                var nextL = l.Get(k);
 
                 if (nextL == null)
-                {
-                    nextL = new Tree<T>(l, lkey[i]);
-                    l = nextL;
-                }
+                    nextL = new Tree<T>(l, k);
 
-                if (l.level == i)
-                    break;
+                l = nextL;
             }
 
             l.Value = value;

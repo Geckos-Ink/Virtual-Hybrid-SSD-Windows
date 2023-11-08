@@ -318,8 +318,7 @@ namespace VHSSD
 
                 if (fs == null)
                 {
-                    loaded = true;
-                    return;
+                    return; // uhm, this shouldn't be normal
                 }
 
                 name = fs.Name.ToString();

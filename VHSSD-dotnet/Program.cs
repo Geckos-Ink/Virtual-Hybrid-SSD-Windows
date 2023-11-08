@@ -412,6 +412,7 @@ namespace VHSSD
         {
 
             //FileName = ConcatPath(FileName);
+            Console.WriteLine("Open path: "+  FileName);
             var file = vhfs.GetFile(FileName);
 
             try
