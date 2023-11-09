@@ -79,6 +79,7 @@
     <Compile Include="Chucks.cs" />
     <Compile Include="DB.cs" />
     <Compile Include="File.cs" />
+    <Compile Include="INI.cs" />
     <Compile Include="Memory.cs" />
     <Compile Include="MyImplementations.cs" />
     <Compile Include="Program.cs" />
