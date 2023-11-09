@@ -114,7 +114,7 @@ namespace VHSSD
                     if (l.jumpTo != lkey.Substring(i, upTo))
                     {
                         int j = 0;
-                        for (; j < l.jumpTo.Length; j++)
+                        for (; j < jumpTo.Length; j++)
                         {
                             if (jumpTo[j] != lkey[i + j])
                                 break;

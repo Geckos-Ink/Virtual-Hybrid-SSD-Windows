@@ -256,7 +256,7 @@ namespace VHSSD
             file.name = dirs[dirs.Length - 1];
 
             var cfile = root;
-            for (int d = 0; d < dirs.Length - 2; d++)
+            for (int d = 0; d < dirs.Length - 1; d++)
             {
                 var dir = dirs[d];
                 cfile = cfile.GetFile(dir);
@@ -301,15 +301,10 @@ namespace VHSSD
 
                 this.isDirectory = isDirectory;
 
-                if (isDirectory)
-                {
-                    files = new Tree<File>();
+                checkDirectory();
 
-                    attributes.FileAttributes = (uint)FileAttributes.Directory;
-
-                    if (id == 0) 
-                        Load(); // it's root directory
-                }
+                if (ID == 0)
+                    Load(); // it's root directory
             }
 
             public File(long id, VHFS vhfs, File parent=null)
@@ -320,6 +315,18 @@ namespace VHSSD
                 SetFS(vhfs);
 
                 Load();
+            }
+
+            bool _checkDirectoryChecked = false;
+            void checkDirectory()
+            {
+                if (isDirectory && !_checkDirectoryChecked)
+                {
+                    files = new Tree<File>();
+                    attributes.FileAttributes = (uint)FileAttributes.Directory;
+
+                    _checkDirectoryChecked = true;
+                }
             }
 
             public void SetFS(VHFS vhfs)
@@ -356,6 +363,8 @@ namespace VHSSD
 
                 name = fs.Name.ToString();
                 isDirectory = fs.IsDirectory;
+
+                checkDirectory();
 
                 attributes.FileAttributes = fs.FileAttributes;
                 attributes.GrantedAccess = fs.GrantedAccess;
