@@ -21,6 +21,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -37,7 +38,7 @@ namespace VHSSD
         {
             this.FileName = FileName;
 
-            content = System.IO.File.ReadAllText(FileName);
+            content = System.IO.File.ReadAllText(FileName) + '\n';
 
             CalculatePieces();
             PrepareProperties();
@@ -89,6 +90,82 @@ namespace VHSSD
         {
             Props = new Properties();
 
+            var cp = Props;
+            
+            int lp = 0;
+            bool ignore = false;
+            bool isItem = false;
+            string pName = null;
+            string pValue = null;
+            List<string> attrs = new List<string>();
+
+            foreach(var p in pieces)
+            {
+                if (p.Type == ' ')
+                    continue;
+
+                if ((p.Type == 'n'))
+                {
+                    // Save current line
+                    if(pName != null)
+                    {
+                        if (isItem)
+                        {
+                            cp = Props.Get(pName, true);
+                            cp = cp.Get("", true);
+                        }
+                        else
+                        {
+                            cp[pName] = pValue;
+
+                            if(attrs.Count > 0)
+                            {
+                                var pv = cp.Get(pName);
+                                foreach (var a in attrs)
+                                    pv[""] = a;
+                            }
+                        }
+
+                        ignore = isItem = false;
+                        pName = pValue = null;
+                        attrs.Clear();
+                    }
+
+                    continue;
+                }
+
+                if (p.Content.StartsWith("#"))
+                    ignore = true;
+
+                if (ignore)
+                    continue;
+
+                if (lp == 0)
+                {
+                    if (p.Content == "-")
+                    {
+                        isItem = true;
+                        continue;
+                    }
+                }
+                
+                if (isItem)
+                {
+                    if (pName == null)
+                        pName = p.Content;
+                }
+                else
+                {
+                    if (pName == null)
+                        pName = p.Content;
+                    else if (pValue == null)
+                        pName = p.Content;
+                    else
+                        attrs.Add(p.Content);
+                }
+                
+            }
+
         }
 
         public class Properties
@@ -106,15 +183,28 @@ namespace VHSSD
                 }
             }
 
+            public Properties Get(string key, bool create = false)
+            {
+                if (key == "")
+                    key = (Count-1).ToString();
+
+                Properties p;
+                if (!Props.TryGetValue(key, out p)){
+                    if(!create)
+                        return null;
+
+                    p = new Properties();
+                    Props.Add(key, p);
+                }
+
+                return p;
+            }
+
             public string this[string key]
             {
                 get 
                 {
-                    Properties p;
-                    if (!Props.TryGetValue(key, out p))
-                        return null;
-
-                    return p.Value; 
+                    return Get(key)?.Value;
                 }
                 set
                 {
