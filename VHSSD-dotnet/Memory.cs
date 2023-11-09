@@ -163,7 +163,7 @@ namespace VHSSD
             var l = Get(key);
 
             l.Value = default(T);
-           
+
             while(l != null)
             {
                 if (l.Value == null && l.tree == null)
@@ -176,7 +176,7 @@ namespace VHSSD
                     var keys = l.tree.Keys;
                     var k = keys.ElementAt(0);
                     var jt = l.tree[k];
-                    l.jumpTo = k + (jt.jumpTo ?? "");
+                    l.jumpTo = (l.jumpTo ?? "") + k + (jt.jumpTo ?? "");
                     l.Value = jt.Value;
                     l.tree = jt.tree;
                     l.tree = null;
