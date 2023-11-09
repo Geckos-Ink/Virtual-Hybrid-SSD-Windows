@@ -186,10 +186,11 @@ namespace VHSSD
                 }
             }
 
+            int getSeq = 0;
             public Properties Get(string key, bool create = false)
             {
                 if (key == "")
-                    key = (create ? Count : Count-1).ToString();
+                    key = (create ? Count : getSeq++).ToString();
 
                 Properties p;
                 if (!Props.TryGetValue(key, out p)){

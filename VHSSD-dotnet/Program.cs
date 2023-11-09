@@ -505,6 +505,43 @@ namespace VHSSD
             var settings = new INI("drive.ini");
             Console.WriteLine("drive.ini loaded");
 
+            var letter = settings.Props["letter"] ?? "X";
+            var name = settings.Props["name"] ?? "VHSSD";
+
+            vhfs = new VHFS();
+
+            vhfs.AddDrive("C", true);
+            vhfs.AddDrive("E", false);
+
+            var ssd = settings.Props.Get("SSD");
+            var hdd = settings.Props.Get("HDD");
+
+            void readDriveSettings(INI.Properties dprops, bool isSSD)
+            {
+                var dletter = dprops["letter"];
+                var drive = vhfs.AddDrive(dletter, isSSD);
+
+                var sMaxSize = dprops["maxSize"];
+                if (sMaxSize != null)
+                {
+                    var maxSize = long.Parse(sMaxSize);
+                    maxSize *= (long)Math.Pow(1024, 3);
+                    drive.MaxSize = maxSize;
+                }
+            }
+
+            for(int i=0; i<ssd.Count; i++)
+            {
+                var dprops = ssd.Get(i.ToString());
+                readDriveSettings(dprops, true);
+            }
+
+            for (int i = 0; i < hdd.Count; i++)
+            {
+                var dprops = hdd.Get(i.ToString());
+                readDriveSettings(dprops, false);
+            }
+
             try
             {
                 String DebugLogFile = null;
@@ -517,13 +554,9 @@ namespace VHSSD
                 Ptfs Ptfs = null;
                 int I;  
 
-                MountPoint = "X:";
-                VolumePrefix = "\\vhfs\\test";
+                MountPoint = letter+":";
+                VolumePrefix = "\\vhfs\\"+name;
 
-                vhfs = new VHFS();
-
-                vhfs.AddDrive("C", true);
-                vhfs.AddDrive("E", false);
 
                 Host = new FileSystemHost(Ptfs = new Ptfs(vhfs));
                 Host.Prefix = VolumePrefix;
