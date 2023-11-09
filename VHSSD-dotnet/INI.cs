@@ -16,7 +16,9 @@
  *	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+using Newtonsoft.Json.Linq;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -29,7 +31,7 @@ namespace VHSSD
         public string FileName;
         string content;
         List<TextPiece> pieces = new List<TextPiece>();
-        
+        public Properties Props;
 
         public INI (string FileName)
         {
@@ -38,6 +40,7 @@ namespace VHSSD
             content = System.IO.File.ReadAllText(FileName);
 
             CalculatePieces();
+            PrepareProperties();
         }
 
         public void CalculatePieces()
@@ -80,6 +83,51 @@ namespace VHSSD
         {
             public char Type = '\0';
             public string Content;
+        }
+
+        public void PrepareProperties()
+        {
+            Props = new Properties();
+
+        }
+
+        public class Properties
+        {
+            public string Name;
+            public string Value;
+
+            public Dictionary<string, Properties> Props = new Dictionary<string, Properties>();
+
+            public int Count
+            {
+                get
+                {
+                    return Props.Count;
+                }
+            }
+
+            public string this[string key]
+            {
+                get 
+                {
+                    Properties p;
+                    if (!Props.TryGetValue(key, out p))
+                        return null;
+
+                    return p.Value; 
+                }
+                set
+                {
+                    if (key == "")
+                        key = Count.ToString();
+
+                    var p = new Properties();
+                    p.Name = key;
+                    p.Value = value;
+
+                    Props[key] = p;
+                }
+            }
         }
     }
 }
