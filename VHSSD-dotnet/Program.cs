@@ -502,6 +502,9 @@ namespace VHSSD
 
         protected override void OnStart(String[] Args)
         {
+            var settings = new INI("drive.ini");
+            Console.WriteLine("drive.ini loaded");
+
             try
             {
                 String DebugLogFile = null;
@@ -512,7 +515,7 @@ namespace VHSSD
                 IntPtr DebugLogHandle = (IntPtr)(-1);
                 FileSystemHost Host = null;
                 Ptfs Ptfs = null;
-                int I;
+                int I;  
 
                 MountPoint = "X:";
                 VolumePrefix = "\\vhfs\\test";

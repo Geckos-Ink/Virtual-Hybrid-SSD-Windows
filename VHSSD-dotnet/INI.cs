@@ -126,6 +126,7 @@ namespace VHSSD
                             }
                         }
 
+                        lp = 0;
                         ignore = isItem = false;
                         pName = pValue = null;
                         attrs.Clear();
@@ -147,6 +148,8 @@ namespace VHSSD
                         isItem = true;
                         continue;
                     }
+
+                    lp++;
                 }
                 
                 if (isItem)
@@ -159,7 +162,7 @@ namespace VHSSD
                     if (pName == null)
                         pName = p.Content;
                     else if (pValue == null)
-                        pName = p.Content;
+                        pValue = p.Content;
                     else
                         attrs.Add(p.Content);
                 }
@@ -186,7 +189,7 @@ namespace VHSSD
             public Properties Get(string key, bool create = false)
             {
                 if (key == "")
-                    key = (Count-1).ToString();
+                    key = (create ? Count : Count-1).ToString();
 
                 Properties p;
                 if (!Props.TryGetValue(key, out p)){
