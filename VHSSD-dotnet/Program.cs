@@ -510,9 +510,6 @@ namespace VHSSD
 
             vhfs = new VHFS();
 
-            vhfs.AddDrive("C", true);
-            vhfs.AddDrive("E", false);
-
             var ssd = settings.Props.Get("SSD");
             var hdd = settings.Props.Get("HDD");
 
@@ -556,7 +553,6 @@ namespace VHSSD
 
                 MountPoint = letter+":";
                 VolumePrefix = "\\vhfs\\"+name;
-
 
                 Host = new FileSystemHost(Ptfs = new Ptfs(vhfs));
                 Host.Prefix = VolumePrefix;
