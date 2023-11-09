@@ -93,6 +93,20 @@ namespace VHSSD
 
         #region Drives 
 
+        public long TotalSize = 0;
+
+        public long UsedBytes
+        {
+            get
+            {
+                long res = 0;
+                foreach (var disk in AllDrives)
+                    res += disk.row.UsedBytes;
+
+                return res;
+            }
+        }
+
         public Drive AddDrive(string letter, bool ssd)
         {
             var drive = new Drive(this, letter, ssd);

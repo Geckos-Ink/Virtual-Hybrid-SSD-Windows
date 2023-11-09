@@ -111,8 +111,8 @@ namespace VHSSD
             VolumeInfo = default(VolumeInfo);
 
             //todo
-            VolumeInfo.TotalSize = (ulong)1024 * 1024 * 1024 * 100;
-            VolumeInfo.FreeSize = VolumeInfo.TotalSize;
+            VolumeInfo.TotalSize = (ulong)vhfs.TotalSize;
+            VolumeInfo.FreeSize = (ulong)(vhfs.TotalSize - vhfs.UsedBytes);
 
             return STATUS_SUCCESS;
         }
@@ -525,6 +525,9 @@ namespace VHSSD
                     maxSize *= (long)Math.Pow(1024, 3);
                     drive.MaxSize = maxSize;
                 }
+
+                if (!isSSD)
+                    vhfs.TotalSize += drive.MaxSize;
             }
 
             for(int i=0; i<ssd.Count; i++)
