@@ -289,7 +289,10 @@ namespace VHSSD
             var file = (VHFS.File)FileDesc0;
 
             if (Offset > (UInt64)file.attributes.FileSize)
-                ThrowIoExceptionWithNtStatus(STATUS_END_OF_FILE);
+            {
+                PBytesTransferred = 0;
+                return STATUS_END_OF_FILE;
+            }
 
             file.attributes.LastAccessTime = Static.FileTime;
 
