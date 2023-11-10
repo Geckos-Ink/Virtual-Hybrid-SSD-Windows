@@ -66,9 +66,11 @@ namespace VHSSD
             {
                 chucksUsage.Clear();
 
-                foreach (var idChucks in vhfs.chucks.chucks)
+                var chucksByFile = new Dictionary<long, Dictionary<long, Chuck>>(vhfs.chucks.chucks);
+                foreach (var idChucks in chucksByFile)
                 {
-                    foreach (var chuck in idChucks.Value)
+                    var chucks = new Dictionary<long, Chuck>(idChucks.Value);
+                    foreach (var chuck in chucks)
                     {
                         try
                         {
