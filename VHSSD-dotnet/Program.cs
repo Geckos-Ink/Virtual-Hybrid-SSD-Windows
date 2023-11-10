@@ -297,6 +297,8 @@ namespace VHSSD
             file.attributes.LastAccessTime = Static.FileTime;
 
             file.Read(Buffer, Offset, Length, out PBytesTransferred);
+
+            //Console.WriteLine("Read: \tOffset: "+ Offset + "\tLength: "+Length+ "\tTransferred: "+ PBytesTransferred + "\tAllocationDiffer: " + (Offset % 4096));
        
             return STATUS_SUCCESS;
         }

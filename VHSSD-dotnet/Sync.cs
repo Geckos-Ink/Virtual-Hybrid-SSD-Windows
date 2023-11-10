@@ -242,6 +242,14 @@ namespace VHSSD
 
                         tick++;
                     }
+
+                    // Save iterate streams if needed
+                    var _iterateStreams = new List<DB.IterateStream>(vhfs.DB.iterateStreams);
+                    foreach (var stream in _iterateStreams)
+                    {
+                        if(stream.Changed)
+                            stream.Save();
+                    }
                 }
                 catch (Exception ex) 
                 { 
@@ -299,7 +307,7 @@ namespace VHSSD
                     /// Don't close anything (afterall that saves data) after these objects
                     ///
 
-                    // Close iterate streams
+                    // Save iterate streams
                     var _iterateStreams = new List<DB.IterateStream>(vhfs.DB.iterateStreams);
                     foreach (var stream in _iterateStreams)
                     {
