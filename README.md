@@ -41,6 +41,8 @@ This example demonstrate the the sections which start with an "-" symbol represe
 
 The total space of the virtual drive is the sum of the max sizes of HDD drives.
 
+**Remember to close the application pressing Enter in its terminal window to avoid data corruption.**
+
 ## This is just for development
 
 In this moment I don't publish releases because VHSSD is <u>**totally under development**</u> phase, so you have to manually compile the Visual Studio project. Can easily occours virtual drive data distruction, forcing you to reset all environment. To achieve this rapidly, just set the `DebugResetEnv` variable in `Static` class (`MyImplementations.cs`) to `true` to automatically delete all created folder during the start up (remember to set it again to `false`).
