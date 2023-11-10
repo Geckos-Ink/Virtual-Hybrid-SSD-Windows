@@ -2,6 +2,8 @@
 
 ### Create an hybrid SSD drive to achieve higher speed on Windows - even if you're penniless like me!
 
+![logo](assets/logo.png)
+
 VHSSD is an application written in C# .NET based on [WinFsp](https://winfsp.dev/) library which allows you to merge multiple SSD and HDD to achieve an unique drive which uses SSD drives for caching and HDD drives for permanent file saving.
 
 ## Requirements:
