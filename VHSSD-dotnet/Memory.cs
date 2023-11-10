@@ -116,9 +116,9 @@ namespace VHSSD
                     if(upTo > maxLen) upTo = maxLen;
      
                     int j = 0;
-                    for (; j < jumpTo.Length; j++)
+                    for (; j < upTo; j++)
                     {
-                        if (jumpTo[j] != lkey[i + j])
+                        if (l.jumpTo[j] != lkey[i + j])
                             break;
                     }
 
@@ -139,10 +139,26 @@ namespace VHSSD
                     }
                     else
                     {
-                        l.tree = new Dictionary<char, Tree<T>>();
+                        l.tree = l.tree ?? new Dictionary<char, Tree<T>>();
                     }
 
-                    i += l.jumpTo?.Length ?? 0;
+                    if (l.jumpTo == lkey.Substring(i, l.jumpTo.Length))
+                    {
+                        i += l.jumpTo.Length;
+                    }
+                    else
+                    {
+                        var oldTree = l.tree;
+                        l.tree = new Dictionary<char, Tree<T>>();
+
+                        var shift = new Tree<T>(l, l.jumpTo[0]);
+                        shift.tree = oldTree;
+                        shift.Value = l.Value;
+                        shift.jumpTo = l.jumpTo.Length > 1 ? l.jumpTo.Substring(1) : "";
+
+                        l.jumpTo = "";
+                        l.Value = default(T);
+                    }
 
                     if (i == lkey.Length)
                         break;
@@ -180,7 +196,7 @@ namespace VHSSD
             {
                 if (l.Value == null && l.tree == null)
                 {
-                    l.parent?.tree.Remove(l.key);
+                    l.parent?.tree?.Remove(l.key);
                 }
 
                 if (l.tree?.Count == 1)
@@ -191,7 +207,6 @@ namespace VHSSD
                     l.jumpTo = (l.jumpTo ?? "") + k + (jt.jumpTo ?? "");
                     l.Value = jt.Value;
                     l.tree = jt.tree;
-                    l.tree = null;
                 }
 
                 l = l.parent;
