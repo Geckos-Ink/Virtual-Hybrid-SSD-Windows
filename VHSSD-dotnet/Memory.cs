@@ -24,6 +24,10 @@ using System.Threading.Tasks;
 
 namespace VHSSD
 {
+    /// <summary>
+    /// This class was full of hope and a total repetance
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class Tree<T>
     {
         public Tree<T> parent;
@@ -110,25 +114,29 @@ namespace VHSSD
                     var maxLen = lkey.Length - i;
                     var upTo = l.jumpTo.Length;
                     if(upTo > maxLen) upTo = maxLen;
-
-                    if (l.jumpTo != lkey.Substring(i, upTo))
+     
+                    int j = 0;
+                    for (; j < jumpTo.Length; j++)
                     {
-                        int j = 0;
-                        for (; j < jumpTo.Length; j++)
-                        {
-                            if (jumpTo[j] != lkey[i + j])
-                                break;
-                        }
+                        if (jumpTo[j] != lkey[i + j])
+                            break;
+                    }
 
-                        var div = l.jumpTo.Substring(j, l.jumpTo.Length - j);
-                        l.jumpTo = l.jumpTo.Substring(0, j);
+                    var div = l.jumpTo.Substring(j, l.jumpTo.Length - j);
+                    l.jumpTo = l.jumpTo.Substring(0, j);
 
+                    if (div.Length > 0)
+                    {
                         var tdiv = new Tree<T>(l, div[0]);
                         tdiv.Value = l.Value;
                         tdiv.jumpTo = div.Length > 1 ? div.Substring(1) : "";
 
                         l.Value = default(T);
-                    }  
+                    }
+                    else
+                    {
+                        l.tree = new Dictionary<char, Tree<T>>();
+                    }
 
                     i += l.jumpTo?.Length ?? 0;
 
@@ -136,7 +144,7 @@ namespace VHSSD
                         break;
                 }
 
-                if(l.tree == null || l.tree.Count == 0)
+                if(l.tree == null)
                 {
                     l.jumpTo = lkey.Substring(i);
                     break;
