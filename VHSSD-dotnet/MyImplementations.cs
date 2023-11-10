@@ -31,7 +31,7 @@ namespace VHSSD
         /// <summary>
         /// Enable it just for debug purposes: it reset ALL data at every startup
         /// </summary>
-        public static bool DebugResetEnv = true;
+        public static bool DebugResetEnv = false;
 
         public static long UnixTimeMS
         {
