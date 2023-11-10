@@ -280,13 +280,6 @@ namespace VHSSD
             {
                 try
                 {
-                    // Close iterate streams
-                    var _iterateStreams = new List<DB.IterateStream>(vhfs.DB.iterateStreams);
-                    foreach (var stream in _iterateStreams)
-                    {
-                        stream.Save();
-                    }
-
                     // Close chucks
                     foreach (var idChucks in vhfs.chucks.chucks)
                     {
@@ -296,16 +289,27 @@ namespace VHSSD
                         }
                     }
 
-                    // Close bytes tables
-                    foreach (var table in vhfs.DB.bytesTables)
-                    {
-                        table.Value.fileValues?.Close();
-                    }
-
                     // Close all drives
                     foreach (var drive in vhfs.AllDrives)
                     {
                         drive.Close();
+                    }
+
+                    ///
+                    /// Don't close anything (afterall that saves data) after these objects
+                    ///
+
+                    // Close iterate streams
+                    var _iterateStreams = new List<DB.IterateStream>(vhfs.DB.iterateStreams);
+                    foreach (var stream in _iterateStreams)
+                    {
+                        stream.Save();
+                    }
+
+                    // Close bytes tables
+                    foreach (var table in vhfs.DB.bytesTables)
+                    {
+                        table.Value.fileValues?.Close();
                     }
 
                     isClosing = false;
