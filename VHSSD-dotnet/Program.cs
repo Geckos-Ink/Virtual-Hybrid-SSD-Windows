@@ -101,7 +101,7 @@ namespace VHSSD
             Host.PostCleanupWhenModifiedOnly = true;
             Host.PassQueryDirectoryPattern = true;
             Host.FlushAndPurgeOnCleanup = true;
-            Host.VolumeCreationTime = (ulong) DateTime.Now.ToFileTimeUtc(); 
+            Host.VolumeCreationTime = Static.FileTime; //todo: save its creation time 
             Host.VolumeSerialNumber = 0;
             return STATUS_SUCCESS;
         }
@@ -169,6 +169,11 @@ namespace VHSSD
                     file.attributes.FileAttributes = FileAttributes;
                 }
 
+                file.attributes.CreationTime = Static.FileTime;
+                file.attributes.ChangeTime = Static.FileTime;
+                file.attributes.LastAccessTime = Static.FileTime;
+                file.attributes.LastWriteTime = Static.FileTime;
+
                 file.loaded = true;
 
                 vhfs.AddFile(file, FileName);
@@ -198,6 +203,8 @@ namespace VHSSD
         {
 
             var file = vhfs.GetFile(FileName);
+
+            file.attributes.LastAccessTime = Static.FileTime;
 
             try
             {
@@ -231,6 +238,8 @@ namespace VHSSD
                 file.attributes.FileAttributes = FileAttributes;
 
             file.attributes.AllocationSize = AllocationSize;
+            file.attributes.ChangeTime = Static.FileTime;
+            file.attributes.LastAccessTime = Static.FileTime;
 
             FileInfo = file.GetFileInfo();
 
@@ -272,6 +281,8 @@ namespace VHSSD
             if (Offset > (UInt64)file.attributes.FileSize)
                 ThrowIoExceptionWithNtStatus(STATUS_END_OF_FILE);
 
+            file.attributes.LastAccessTime = Static.FileTime;
+
             file.Read(Buffer, Offset, Length, out PBytesTransferred);
        
             return STATUS_SUCCESS;
@@ -289,6 +300,10 @@ namespace VHSSD
             out FileInfo FileInfo)
         {
             var file = (VHFS.File)FileDesc0;
+
+            file.attributes.ChangeTime = Static.FileTime;
+            file.attributes.LastAccessTime = Static.FileTime;
+            file.attributes.LastWriteTime = Static.FileTime;
 
             file.Write(Buffer, Offset, Length, WriteToEndOfFile, ConstrainedIo, out PBytesTransferred, out FileInfo);
 

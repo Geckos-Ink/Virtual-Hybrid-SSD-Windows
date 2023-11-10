@@ -49,6 +49,14 @@ namespace VHSSD
             }
         }
 
+        public static ulong FileTime
+        {
+            get
+            {
+                return (ulong)DateTime.Now.ToFileTimeUtc();
+            }
+        }
+
         public static void CreateDirIfNotExists(string path)
         {
             if (!Directory.Exists(path))
