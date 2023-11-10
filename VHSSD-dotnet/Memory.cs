@@ -127,7 +127,11 @@ namespace VHSSD
 
                     if (div.Length > 0)
                     {
+                        var oldTree = l.tree;
+                        l.tree = new Dictionary<char, Tree<T>>();
+
                         var tdiv = new Tree<T>(l, div[0]);
+                        tdiv.tree = oldTree;
                         tdiv.Value = l.Value;
                         tdiv.jumpTo = div.Length > 1 ? div.Substring(1) : "";
 
