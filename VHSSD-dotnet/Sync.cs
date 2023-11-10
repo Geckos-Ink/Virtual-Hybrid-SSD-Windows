@@ -247,8 +247,11 @@ namespace VHSSD
                     var _iterateStreams = new List<DB.IterateStream>(vhfs.DB.iterateStreams);
                     foreach (var stream in _iterateStreams)
                     {
-                        if(stream.Changed)
+                        if (stream.Changed && (Static.UnixTimeMS - stream.lastChange) > 1000)
+                        {
                             stream.Save();
+                            stream.Changed = false;
+                        }
                     }
                 }
                 catch (Exception ex) 
