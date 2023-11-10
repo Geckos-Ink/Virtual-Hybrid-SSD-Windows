@@ -204,6 +204,16 @@ namespace VHSSD
 
             var file = vhfs.GetFile(FileName);
 
+            if (file == null)
+            {
+                FileNode = default(Object);
+                FileDesc0 = default(Object);
+                FileInfo = default(FileInfo);
+                NormalizedName = default(String);
+
+                return STATUS_FILE_NOT_AVAILABLE;
+            }
+
             file.attributes.LastAccessTime = Static.FileTime;
 
             try

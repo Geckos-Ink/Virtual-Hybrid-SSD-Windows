@@ -172,7 +172,7 @@ namespace VHSSD
             var parts = GetParts(pos, bytes.LongLength);
             foreach (var part in parts)
             {
-                var bb = new byte[part.length];
+                var bb = new byte[part.pos + part.length];
                 Array.Copy(bytes, part.resPos, bb, part.pos, part.length);
                 var chuck = GetChuck(ID, part.part);
                 chuck.inUsing = true;

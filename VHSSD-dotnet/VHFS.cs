@@ -470,7 +470,7 @@ namespace VHSSD
             {
                 LoadFiles();
 
-                if (String.IsNullOrEmpty(name))
+                if (String.IsNullOrEmpty(name) || files == null)
                     return this;
 
                 return files.Get(name)?.Value;
