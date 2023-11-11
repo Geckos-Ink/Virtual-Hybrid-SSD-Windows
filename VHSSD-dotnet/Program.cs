@@ -413,6 +413,24 @@ namespace VHSSD
             return STATUS_SUCCESS;
         }
 
+        public override int SetReparsePoint(object FileNode, object FileDesc, string FileName, byte[] ReparseData)
+        {
+            var file = (VHFS.File)FileDesc;
+
+            file.attributes.ReparseData = ReparseData;
+
+            return STATUS_SUCCESS;
+        }
+
+        public override int GetReparsePoint(object FileNode, object FileDesc, string FileName, ref byte[] ReparseData)
+        {
+            var file = (VHFS.File)FileDesc;
+
+            ReparseData = file.attributes.ReparseData;
+
+            return STATUS_SUCCESS;
+        }
+
         public override Int32 SetFileSize(
             Object FileNode,
             Object FileDesc0,

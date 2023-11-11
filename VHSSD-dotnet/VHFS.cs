@@ -379,7 +379,10 @@ namespace VHSSD
                 attributes.ChangeTime = fs.ChangeTime;
                 attributes.CreationTime = fs.CreationTime;
                 attributes.FileSize = fs.FileSize;
+
                 attributes.SecurityDescription = fs.SecurityDescription; // FUCK YOU 
+
+                attributes.ReparseData = fs.ReparseData;
 
                 lastFS = fs.Clone<DB.FS>();
 
@@ -433,7 +436,10 @@ namespace VHSSD
                 fs.ChangeTime = attributes.ChangeTime;
                 fs.CreationTime = attributes.CreationTime;
                 fs.FileSize = attributes.FileSize;
+
                 fs.SecurityDescription = attributes.SecurityDescription;
+
+                fs.ReparseData = attributes.ReparseData;
 
                 // Get file tree
                 if (isDirectory)
@@ -607,7 +613,10 @@ namespace VHSSD
                 public ulong LastAccessTime;
                 public ulong LastWriteTime;
                 public ulong ChangeTime;
+
                 public byte[] SecurityDescription;
+
+                public byte[] ReparseData;
             }
         }
     }

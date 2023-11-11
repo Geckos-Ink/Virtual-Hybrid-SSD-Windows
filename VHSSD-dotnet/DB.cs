@@ -1403,7 +1403,10 @@ namespace VHSSD
             public ulong LastAccessTime;
             public ulong LastWriteTime;
             public ulong ChangeTime;
+
             public byte[] SecurityDescription;
+
+            public byte[] ReparseData;
         }
 
         public class Chuck : DBRow
