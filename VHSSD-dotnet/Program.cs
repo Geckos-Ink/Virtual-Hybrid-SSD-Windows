@@ -97,11 +97,13 @@ namespace VHSSD
             Host.CaseSensitiveSearch = false;
             Host.CasePreservedNames = true;
             Host.UnicodeOnDisk = true;
-            Host.PersistentAcls = true;
+            Host.PersistentAcls = false;
             Host.PostCleanupWhenModifiedOnly = true;
-            Host.PassQueryDirectoryPattern = true;
+            Host.PassQueryDirectoryPattern = false;
             Host.FlushAndPurgeOnCleanup = true;
-            Host.VolumeCreationTime = Static.FileTime; //todo: save its creation time 
+            Host.ReparsePoints = true;
+            Host.ExtendedAttributes = false;
+            Host.VolumeCreationTime = 0; //todo: save its creation time 
             Host.VolumeSerialNumber = 0;
             return STATUS_SUCCESS;
         }
@@ -168,19 +170,16 @@ namespace VHSSD
             if (0 == (CreateOptions & FILE_DIRECTORY_FILE))
             {
                 file = new VHFS.File(false);
-
-                file.attributes.SecurityDescription = SecurityDescriptor;
-                file.attributes.GrantedAccess = GrantedAccess;
-                file.attributes.FileAttributes = FileAttributes;
             }
             else
             {
                 file = new VHFS.File(true);
-
-                file.attributes.SecurityDescription = SecurityDescriptor;
-                file.attributes.FileAttributes = FileAttributes;
             }
 
+
+            file.attributes.SecurityDescription = SecurityDescriptor;
+            file.attributes.GrantedAccess = GrantedAccess;
+            file.attributes.FileAttributes = FileAttributes;
             file.attributes.AllocationSize = AllocationSize;
 
             file.attributes.CreationTime = Static.FileTime;

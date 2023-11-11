@@ -54,6 +54,12 @@ namespace VHSSD
         {
             var lkey = key.ToLower();
 
+            if(Keys.Contains(key))
+            {
+                tree[lkey] = value;
+                return;
+            }
+
             Keys.Add(key);
             tree.Add(lkey, value);
         }

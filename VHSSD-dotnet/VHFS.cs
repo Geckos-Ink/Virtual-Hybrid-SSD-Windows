@@ -397,6 +397,8 @@ namespace VHSSD
             {
                 if (isDirectory && !loadedFiles)
                 {
+                    loadedFiles = true;
+
                     if (lastFS != null)
                     {
                         foreach (var fid in lastFS.Files)
@@ -406,8 +408,6 @@ namespace VHSSD
                             files.Set(file.name, file);
                         }
                     }
-
-                    loadedFiles = true;
                 }
             }
 
