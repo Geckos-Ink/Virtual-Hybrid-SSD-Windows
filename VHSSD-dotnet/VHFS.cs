@@ -502,15 +502,23 @@ namespace VHSSD
 
             #region File
 
+            public int ReadingOps = 0;
             public void Read(IntPtr Buffer, UInt64 Offset, UInt32 Length, out UInt32 PBytesTransferred)
             {
+                ReadingOps++;
+
                 var bytes = vhfs.chucks.Read(ID, (long)Offset, Length);
                 Marshal.Copy(bytes, 0, Buffer, bytes.Length);
                 PBytesTransferred = Length;
+
+                ReadingOps--;
             }
 
+            public int WritingOps = 0;
             public void Write(IntPtr Buffer,  UInt64 Offset, UInt32 Length, Boolean WriteToEndOfFile, Boolean ConstrainedIo, out UInt32 PBytesTransferred, out Fsp.Interop.FileInfo FileInfo)
             {
+                WritingOps++;
+
                 Byte[] Bytes = new byte[Length];
                 Marshal.Copy(Buffer, Bytes, 0, Bytes.Length);
                
@@ -521,6 +529,8 @@ namespace VHSSD
 
                 PBytesTransferred = (UInt32)Bytes.Length;
                 FileInfo = GetFileInfo();
+
+                WritingOps--;
             }
 
             public void SetSize(UInt64 NewSize, Boolean SetAllocationSize = false)
