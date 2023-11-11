@@ -309,7 +309,10 @@ namespace VHSSD
                 checkDirectory();
 
                 if (ID == 0)
-                    Load(); // it's root directory
+                {
+                    Load(false); // it's root directory
+                    loadedFiles = true;
+                }
             }
 
             public File(long id, VHFS vhfs, File parent=null)
@@ -351,7 +354,7 @@ namespace VHSSD
 
             public bool loaded = false;
 
-            public void Load(bool lazy=false)
+            public void Load(bool lazy)
             {
                 if (loaded) return;
                 loaded = true;
@@ -398,14 +401,13 @@ namespace VHSSD
             {
                 if (isDirectory && !loadedFiles)
                 {
-                    loadedFiles = true;
-
                     if (lastFS != null)
                     {
+                        loadedFiles = true;
+
                         foreach (var fid in lastFS.Files)
                         {
                             var file = new File(fid, this.vhfs, this);
-                            file.Load(true);
                             files.Set(file.name, file);
                         }
                     }
@@ -470,6 +472,8 @@ namespace VHSSD
 
                         fs.Files[f++] = tfile.ID;
                     }
+
+                    Static.Debug.Write(new string[] { "SavingDir", name, files.Keys.Count.ToString() });
                 }
 
                 var tFS = vhfs.DB.GetType(typeof(DB.FS));

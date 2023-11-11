@@ -347,14 +347,13 @@ namespace VHSSD
 
             try
             {
-                file.Load();
+                file.Load(false);
 
                 FileNode = file;
                 FileDesc0 = file;
                 NormalizedName = default(string);
                 FileInfo = file.GetFileInfo();
                 return STATUS_SUCCESS;
-
             }
             catch
             {
