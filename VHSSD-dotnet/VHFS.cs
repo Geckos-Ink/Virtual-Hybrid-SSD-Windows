@@ -401,9 +401,9 @@ namespace VHSSD
                             files.Set(file.name, file);
                         }
                     }
-                }
 
-                loadedFiles = true;
+                    loadedFiles = true;
+                }
             }
 
             // Pretty useless vars

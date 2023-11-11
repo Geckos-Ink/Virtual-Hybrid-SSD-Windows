@@ -149,6 +149,7 @@ namespace VHSSD
 
         #endregion
 
+
         public byte[] Read(long ID, long pos, long length)
         {
             var bytes = new byte[length];
@@ -166,6 +167,7 @@ namespace VHSSD
 
             return bytes;
         }
+
 
         public void Write(long ID, long pos, byte[] bytes)
         {
@@ -406,9 +408,11 @@ namespace VHSSD
             #endregion
 
             public bool InOperation = false;
-
             public byte[] Read(Part part)
             {
+                while (InOperation)
+                    Thread.Yield();
+
                 InOperation = true;
 
                 var file = BestDrive();
@@ -418,13 +422,16 @@ namespace VHSSD
                 var res = file.Read(part.length, part.pos);
 
                 row.LastRead = CalculateAvgUsage();
-
                 InOperation = false;
+
                 return res;
             }
 
             public void Write(Part part, byte[] bytes)
             {
+                while (InOperation)
+                    Thread.Yield();
+
                 InOperation = true;
                 inWrite = true;
 

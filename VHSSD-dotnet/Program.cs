@@ -254,6 +254,7 @@ namespace VHSSD
             if(ReplaceFileAttributes) //todo: check if this could destroy FileAttributes
                 file.attributes.FileAttributes = FileAttributes;
 
+            //todo: Check AllocationSize behaviour
             file.attributes.AllocationSize = AllocationSize;
             file.attributes.ChangeTime = Static.FileTime;
             file.attributes.LastAccessTime = Static.FileTime;
