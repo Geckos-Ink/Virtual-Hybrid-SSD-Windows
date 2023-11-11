@@ -438,7 +438,14 @@ namespace VHSSD
 
                     var f = 0;
                     foreach (var key in files.Keys)
-                        fs.Files[f] = files.Get(files.Keys[f++]).Value.ID;
+                    {
+                        var fn = files.Keys[f];
+                        File tfile = null;
+                        while ((tfile = files.Get(fn)) == null)
+                            Console.WriteLine("ERROR: Just another Tree in the wall");
+
+                        fs.Files[f++] = tfile.ID;
+                    }
                 }
 
                 var tFS = vhfs.DB.GetType(typeof(DB.FS));
@@ -474,7 +481,7 @@ namespace VHSSD
                 if (String.IsNullOrEmpty(name) || files == null)
                     return this;
 
-                return files.Get(name)?.Value;
+                return files.Get(name);
             }
 
             public List<string> ListFiles()
@@ -509,7 +516,8 @@ namespace VHSSD
 
                 var bytes = vhfs.chucks.Read(ID, (long)Offset, Length);
                 Marshal.Copy(bytes, 0, Buffer, bytes.Length);
-                PBytesTransferred = Length;
+
+                PBytesTransferred = Length;  
 
                 ReadingOps--;
             }

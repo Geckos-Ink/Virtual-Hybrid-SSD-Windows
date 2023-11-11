@@ -307,11 +307,12 @@ namespace VHSSD
                 return STATUS_END_OF_FILE;
             }
 
-            Static.Debug.Write(new string[] { "Read", file.name, "Offset:", Offset.ToString(), "Length:", Length.ToString() });
-
             file.attributes.LastAccessTime = Static.FileTime;
 
             file.Read(Buffer, Offset, Length, out PBytesTransferred);
+
+            Static.Debug.Write(new string[] { "Read", file.name, "Offset:", Offset.ToString(), "Length:", Length.ToString() });
+            Thread.SpinWait(1);
 
             //Console.WriteLine("Read: \tOffset: "+ Offset + "\tLength: "+Length+ "\tTransferred: "+ PBytesTransferred + "\tAllocationDiffer: " + (Offset % 4096));
 

@@ -51,6 +51,14 @@ namespace VHSSD
             }
         }
 
+        public static long Ticks
+        {
+            get
+            {
+                return DateTimeOffset.UtcNow.Ticks;
+            }
+        }
+
         public static ulong FileTime
         {
             get
