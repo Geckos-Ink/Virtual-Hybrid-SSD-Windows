@@ -61,6 +61,9 @@ namespace VHSSD
 
             if(stream == null)
             {
+                if (!System.IO.File.Exists(FileName))
+                    justRead = false;
+
                 if(justRead)
                     fstream = new FileStream(FileName, FileMode.Open, FileAccess.Read);
                 else 
