@@ -52,7 +52,7 @@ namespace VHSSD
 
         public void TimerDispose(object state)
         {
-            if (isClosing) return;
+            if (isClosing || timerDisposeActive) return;
 
             timerDisposeActive = true;
 

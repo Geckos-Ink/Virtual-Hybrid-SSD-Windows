@@ -48,11 +48,17 @@ namespace VHSSD
             this.FileName = fileName;
         }
 
+        public bool justRead = false;
+
         void checkStream()
         {
             if(stream == null)
             {
-                fstream = new FileStream(FileName, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+                if(justRead)
+                    fstream = new FileStream(FileName, FileMode.Open, FileAccess.Read);
+                else 
+                    fstream = new FileStream(FileName, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+
                 stream = fstream;
 
                 openingLength = Length;

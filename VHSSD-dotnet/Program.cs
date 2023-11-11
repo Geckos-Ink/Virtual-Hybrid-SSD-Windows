@@ -299,7 +299,13 @@ namespace VHSSD
             file.Read(Buffer, Offset, Length, out PBytesTransferred);
 
             //Console.WriteLine("Read: \tOffset: "+ Offset + "\tLength: "+Length+ "\tTransferred: "+ PBytesTransferred + "\tAllocationDiffer: " + (Offset % 4096));
-       
+
+            /* TODO:
+             * Investigate: a file doesn't works? Load it slowly. Why?
+            if (file.name == "Crash Bandicoot (USA).iso")
+                Thread.Sleep(1);
+            */
+
             return STATUS_SUCCESS;
         }
 
