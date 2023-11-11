@@ -408,6 +408,7 @@ namespace VHSSD
                         foreach (var fid in lastFS.Files)
                         {
                             var file = new File(fid, this.vhfs, this);
+
                             if (file.lastFS != null)
                                 files.Set(file.name, file);
                             else
