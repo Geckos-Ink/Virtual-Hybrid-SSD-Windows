@@ -149,9 +149,16 @@ namespace VHSSD
         {
             try
             {
-                //FileName = ConcatPath(FileName);
+                var file = vhfs.GetFile(FileName);
 
-                VHFS.File file;
+                if (file != null)
+                {
+                    FileNode = default(Object);
+                    FileDesc0 = file;
+                    NormalizedName = default(String);
+                    FileInfo = file.GetFileInfo();
+                    return STATUS_OBJECT_NAME_COLLISION;
+                }
 
                 if (0 == (CreateOptions & FILE_DIRECTORY_FILE))
                 {

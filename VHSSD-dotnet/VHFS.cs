@@ -517,12 +517,9 @@ namespace VHSSD
                 vhfs.chucks.Write(ID, (long)Offset, Bytes);
 
                 if (WriteToEndOfFile || attributes.FileSize < Offset + Length)
-                {
                     SetSize(Offset + Length);
-                }
 
                 PBytesTransferred = (UInt32)Bytes.Length;
-
                 FileInfo = GetFileInfo();
             }
 
