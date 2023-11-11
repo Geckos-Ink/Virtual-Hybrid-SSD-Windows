@@ -135,8 +135,7 @@ namespace VHSSD
 
             FileAttributes = file.attributes.FileAttributes;
 
-            //SecurityDescriptor = file.attributes.SecurityDescription;
-            SecurityDescriptor = new byte[0];
+            SecurityDescriptor = file.attributes.SecurityDescription;
 
             return STATUS_SUCCESS;
         }
@@ -182,11 +181,14 @@ namespace VHSSD
                 file.attributes.FileAttributes = FileAttributes;
             }
 
+            file.attributes.AllocationSize = AllocationSize;
+
             file.attributes.CreationTime = Static.FileTime;
             file.attributes.ChangeTime = Static.FileTime;
             file.attributes.LastAccessTime = Static.FileTime;
             file.attributes.LastWriteTime = Static.FileTime;
 
+            file.changes = true;
             file.loaded = true;
 
             vhfs.AddFile(file, FileName);
@@ -489,8 +491,7 @@ namespace VHSSD
 
             Static.Debug.Write(new string[] { "GetSecurity", file.name });
 
-            //SecurityDescriptor = file.attributes.SecurityDescription;
-            SecurityDescriptor = new byte[0];
+            SecurityDescriptor = file.attributes.SecurityDescription;
 
             return STATUS_SUCCESS;
         }

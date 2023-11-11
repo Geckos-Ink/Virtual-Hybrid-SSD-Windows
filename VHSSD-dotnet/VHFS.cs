@@ -319,7 +319,7 @@ namespace VHSSD
                 this.ID = id;
                 SetFS(vhfs);
 
-                Load();
+                Load(true);
             }
 
             bool _checkDirectoryChecked = false;
@@ -354,6 +354,7 @@ namespace VHSSD
             public void Load(bool lazy=false)
             {
                 if (loaded) return;
+                loaded = true;
 
                 var fs = new FS();
                 fs.ID = ID;
@@ -362,9 +363,7 @@ namespace VHSSD
                 fs = this.vhfs.TableFS.Get(fs, "Parent,ID");
 
                 if (fs == null)
-                {
                     return; // uhm, this shouldn't be normal
-                }
 
                 name = fs.Name.ToString();
                 isDirectory = fs.IsDirectory;
@@ -381,6 +380,7 @@ namespace VHSSD
                 attributes.FileSize = fs.FileSize;
 
                 attributes.SecurityDescription = fs.SecurityDescription; // FUCK YOU 
+                attributes.SecurityDescription = new byte[0];
 
                 attributes.ReparseData = fs.ReparseData;
 
@@ -389,8 +389,6 @@ namespace VHSSD
                 /// Load tree
                 if (!lazy)
                     LoadFiles();
-
-                loaded = true;
             }
 
             bool loadedFiles = false;
@@ -415,11 +413,22 @@ namespace VHSSD
 
             // Pretty useless vars
             long lastSave = 0;
-            bool changes = false;
+            public bool changes = false;
 
             void Save()
             {
+                if (attributes.SecurityDescription == null)
+                    attributes.SecurityDescription = new byte[0];
+
+                if (!changes)
+                    return;
+
+                changes = false;
+
                 var fs = new FS();
+
+                if(lastFS != null)
+                    fs.AbsIndex = lastFS.AbsIndex;
 
                 fs.ID = ID;
                 fs.Parent = parent != null ? parent.ID : -1;
@@ -447,12 +456,15 @@ namespace VHSSD
                     fs.Files = new long[files.Keys.Count];
 
                     var f = 0;
-                    foreach (var key in files.Keys)
+                    var Keys = new List<string>(files.Keys);
+                    foreach (var key in Keys)
                     {
-                        var fn = files.Keys[f];
+                        var fn = Keys[f];
                         File tfile = null;
                         while ((tfile = files.Get(fn)) == null)
                             Console.WriteLine("ERROR: Just another Tree in the wall");
+
+                        tfile.Save();
 
                         fs.Files[f++] = tfile.ID;
                     }
@@ -555,6 +567,8 @@ namespace VHSSD
             {
                 vhfs.chucks.Resize(ID, (long)attributes.FileSize, (long)NewSize);
                 attributes.FileSize = NewSize;
+
+                changes = true;
             }
 
             public void Flush()
@@ -575,8 +589,17 @@ namespace VHSSD
                 Save();
 
                 // Force parent saving
-                if (!isDirectory)
-                    parent?.Save(); 
+                if (isDirectory)
+                {
+                    foreach(var file in files.tree)
+                    {
+                        file.Value.Save();
+                    }
+                }
+                else
+                {
+                    parent?.Save();
+                }
             }
 
             public Fsp.Interop.FileInfo GetFileInfo()
@@ -584,8 +607,6 @@ namespace VHSSD
                 Load(true);
 
                 var res = new Fsp.Interop.FileInfo();
-
-                attributes.AllocationSize = (ulong)(Math.Floor((double)attributes.FileSize/4096)*4096); //??
 
                 res.FileAttributes = attributes.FileAttributes;
                 res.ReparseTag = 0;

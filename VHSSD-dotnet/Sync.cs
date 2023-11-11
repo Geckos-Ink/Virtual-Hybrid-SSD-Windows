@@ -300,6 +300,9 @@ namespace VHSSD
                         }
                     }
 
+                    // Dispose root
+                    vhfs.root.Dispose();
+
                     // Close all drives
                     foreach (var drive in vhfs.AllDrives)
                     {
