@@ -1405,8 +1405,8 @@ namespace VHSSD
             public ulong ChangeTime;
 
             public byte[] SecurityDescription;
-
             public byte[] ReparseData;
+            public byte[] ExtraBuffer;
         }
 
         public class Chuck : DBRow

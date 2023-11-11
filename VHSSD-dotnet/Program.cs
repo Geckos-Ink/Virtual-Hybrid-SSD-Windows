@@ -92,7 +92,7 @@ namespace VHSSD
             FileSystemHost Host = (FileSystemHost)Host0;
             Host.SectorSize = ALLOCATION_UNIT;
             Host.SectorsPerAllocationUnit = 1;
-            Host.MaxComponentLength = 255;
+            Host.MaxComponentLength = ushort.MaxValue;
             Host.FileInfoTimeout = 1000;
             Host.CaseSensitiveSearch = false;
             Host.CasePreservedNames = true;
@@ -101,8 +101,9 @@ namespace VHSSD
             Host.PostCleanupWhenModifiedOnly = true;
             Host.PassQueryDirectoryPattern = false;
             Host.FlushAndPurgeOnCleanup = true;
-            Host.ReparsePoints = true;
-            Host.ExtendedAttributes = false;
+            Host.ReparsePoints = false;
+            Host.ExtendedAttributes = true;
+            Host.AllowOpenInKernelMode = true;
             Host.VolumeCreationTime = 0; //todo: save its creation time 
             Host.VolumeSerialNumber = 0;
             return STATUS_SUCCESS;
@@ -127,7 +128,7 @@ namespace VHSSD
         {
             var file = vhfs.GetFile(FileName);
 
-            Static.Debug.Write(new string[] { "GetSecurityByName", file?.name ?? "NOT_FOUND" });
+            Static.Debug.Write(new string[] { "GetSecurityByName", file?.name ?? "NOT_FOUND: " + FileName });
 
             if (file == null)
             {
@@ -137,7 +138,7 @@ namespace VHSSD
 
             FileAttributes = file.attributes.FileAttributes;
 
-            SecurityDescriptor = file.attributes.SecurityDescription;
+            SecurityDescriptor = file.attributes.SecurityDescription ?? new byte[0];
 
             return STATUS_SUCCESS;
         }
@@ -197,9 +198,127 @@ namespace VHSSD
             NormalizedName = default(String);
             FileInfo = file.GetFileInfo();
 
-            return STATUS_SUCCESS;
-            
+            return STATUS_SUCCESS; 
         }
+
+        #region Ex
+
+        public override int CreateEx(string FileName, uint CreateOptions, uint GrantedAccess, uint FileAttributes, byte[] SecurityDescriptor, ulong AllocationSize, IntPtr ExtraBuffer, uint ExtraLength, bool ExtraBufferIsReparsePoint, out object FileNode, out object FileDesc, out FileInfo FileInfo, out string NormalizedName)
+        {
+            var file = vhfs.GetFile(FileName);
+
+            Static.Debug.Write(new string[] { "CreateEx", FileName });
+
+            if (file != null)
+            {
+                FileNode = default(Object);
+                FileDesc = file;
+                NormalizedName = default(String);
+                FileInfo = file.GetFileInfo();
+                return STATUS_OBJECT_NAME_COLLISION;
+            }
+
+            if (0 == (CreateOptions & FILE_DIRECTORY_FILE))
+            {
+                file = new VHFS.File(false);
+            }
+            else
+            {
+                file = new VHFS.File(true);
+            }
+
+
+            file.attributes.SecurityDescription = SecurityDescriptor;
+            file.attributes.GrantedAccess = GrantedAccess;
+            file.attributes.FileAttributes = FileAttributes;
+            file.attributes.AllocationSize = AllocationSize;
+
+            file.attributes.CreationTime = Static.FileTime;
+            file.attributes.ChangeTime = Static.FileTime;
+            file.attributes.LastAccessTime = Static.FileTime;
+            file.attributes.LastWriteTime = Static.FileTime;
+
+            file.SetExtraBuffer(ExtraBuffer, ExtraLength);
+
+            file.changes = true;
+            file.loaded = true;
+
+            vhfs.AddFile(file, FileName);
+
+            FileNode = default(Object);
+            FileDesc = file;
+            NormalizedName = default(String);
+            FileInfo = file.GetFileInfo();
+
+            return STATUS_SUCCESS;
+        }
+
+        public override int OverwriteEx(object FileNode, object FileDesc, uint FileAttributes, bool ReplaceFileAttributes, ulong AllocationSize, IntPtr Ea, uint EaLength, out FileInfo FileInfo)
+        {
+            var file = (VHFS.File)FileDesc;
+
+            Static.Debug.Write(new string[] { "OverwriteEx", file.name });
+
+            if (ReplaceFileAttributes) //todo: check if this could destroy FileAttributes
+                file.attributes.FileAttributes = FileAttributes;
+
+            //todo: Check AllocationSize behaviour
+            file.attributes.AllocationSize = AllocationSize;
+            file.attributes.ChangeTime = Static.FileTime;
+            file.attributes.LastAccessTime = Static.FileTime;
+
+            file.SetExtraBuffer(Ea, EaLength);
+
+            file.changes = true;
+
+            FileInfo = file.GetFileInfo();
+
+            return STATUS_SUCCESS;
+        }
+
+        public override int GetEa(object FileNode, object FileDesc, IntPtr Ea, uint EaLength, out uint BytesTransferred)
+        {
+            var file = (VHFS.File)FileDesc;
+
+            Static.Debug.Write(new string[] { "GetEa", file.name });
+
+            file.GetExtraBuffer(Ea, EaLength, out BytesTransferred);
+
+            return STATUS_SUCCESS;
+        }
+
+        public override int SetEa(object FileNode, object FileDesc, IntPtr Ea, uint EaLength, out FileInfo FileInfo)
+        {
+            var file = (VHFS.File)FileDesc;
+
+            Static.Debug.Write(new string[] { "SetEa", file.name });
+
+            file.SetExtraBuffer(Ea, EaLength);
+
+            FileInfo = file.GetFileInfo();
+
+            return STATUS_SUCCESS;
+        }
+
+        public override bool GetEaEntry(object FileNode, object FileDesc, ref object Context, out string EaName, out byte[] EaValue, out bool NeedEa)
+        {
+            var file = (VHFS.File)FileDesc;
+
+            Static.Debug.Write(new string[] { "GetEaEntry", file.name });
+
+            return base.GetEaEntry(FileNode, FileDesc, ref Context, out EaName, out EaValue, out NeedEa);
+        }
+
+        public override int SetEaEntry(object FileNode, object FileDesc, ref object Context, string EaName, byte[] EaValue, bool NeedEa)
+        {
+            var file = (VHFS.File)FileDesc;
+
+            Static.Debug.Write(new string[] { "SetEaEntry", file.name, EaName });
+
+            return base.SetEaEntry(FileNode, FileDesc, ref Context, EaName, EaValue, NeedEa);
+        }
+
+        #endregion
 
         public override Int32 Open(
             String FileName,
@@ -490,7 +609,7 @@ namespace VHSSD
 
             Static.Debug.Write(new string[] { "GetSecurity", file.name });
 
-            SecurityDescriptor = file.attributes.SecurityDescription;
+            SecurityDescriptor = file.attributes.SecurityDescription ?? new byte[0];
 
             return STATUS_SUCCESS;
         }

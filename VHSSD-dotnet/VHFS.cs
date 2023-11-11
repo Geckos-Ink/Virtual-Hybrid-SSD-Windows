@@ -382,6 +382,7 @@ namespace VHSSD
                 attributes.SecurityDescription = fs.SecurityDescription; // FUCK YOU 
                 attributes.SecurityDescription = new byte[0];
 
+                attributes.ExtraBuffer = fs.ExtraBuffer;
                 attributes.ReparseData = fs.ReparseData;
 
                 lastFS = fs.Clone<DB.FS>();
@@ -445,6 +446,7 @@ namespace VHSSD
                 fs.ChangeTime = attributes.ChangeTime;
                 fs.CreationTime = attributes.CreationTime;
                 fs.FileSize = attributes.FileSize;
+                fs.ExtraBuffer = attributes.ExtraBuffer;
 
                 fs.SecurityDescription = attributes.SecurityDescription;
 
@@ -571,6 +573,25 @@ namespace VHSSD
                 changes = true;
             }
 
+            public void SetExtraBuffer(IntPtr Buffer, UInt64 Length)
+            {
+                if(Length == 0)
+                {
+                    attributes.ExtraBuffer = new byte[0];
+                    return;
+                }    
+
+                Byte[] Bytes = new byte[Length];
+                Marshal.Copy(Buffer, Bytes, 0, Bytes.Length);
+                attributes.ExtraBuffer = Bytes;
+            }
+
+            public void GetExtraBuffer(IntPtr Buffer, uint ReqLength, out uint Length)
+            {
+                Marshal.Copy(attributes.ExtraBuffer, 0, Buffer, (int)ReqLength);
+                Length = ReqLength;
+            }
+
             public void Flush()
             {
                 if (!vhfs.chucks.chucks.ContainsKey(ID))
@@ -636,8 +657,8 @@ namespace VHSSD
                 public ulong ChangeTime;
 
                 public byte[] SecurityDescription;
-
                 public byte[] ReparseData;
+                public byte[] ExtraBuffer;
             }
         }
     }
