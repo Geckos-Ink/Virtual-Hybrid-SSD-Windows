@@ -241,6 +241,9 @@ namespace VHSSD
             var cfile = root;
             foreach(var dir in dirs)
             {
+                if (String.IsNullOrEmpty(dir))
+                    return cfile;
+
                 cfile = cfile.GetFile(dir);
 
                 if (cfile == null)
@@ -376,7 +379,7 @@ namespace VHSSD
                 attributes.ChangeTime = fs.ChangeTime;
                 attributes.CreationTime = fs.CreationTime;
                 attributes.FileSize = fs.FileSize;
-                //attributes.SecurityDescription = fs.SecurityDescription; // FUCK YOU 
+                attributes.SecurityDescription = fs.SecurityDescription; // FUCK YOU 
 
                 lastFS = fs.Clone<DB.FS>();
 

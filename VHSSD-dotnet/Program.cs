@@ -134,7 +134,9 @@ namespace VHSSD
             }
 
             FileAttributes = file.attributes.FileAttributes;
-            SecurityDescriptor = file.attributes.SecurityDescription;
+
+            //SecurityDescriptor = file.attributes.SecurityDescription;
+            SecurityDescriptor = new byte[0];
 
             return STATUS_SUCCESS;
         }
@@ -465,7 +467,8 @@ namespace VHSSD
 
             Static.Debug.Write(new string[] { "GetSecurity", file.name });
 
-            SecurityDescriptor = file.attributes.SecurityDescription;
+            //SecurityDescriptor = file.attributes.SecurityDescription;
+            SecurityDescriptor = new byte[0];
 
             return STATUS_SUCCESS;
         }
