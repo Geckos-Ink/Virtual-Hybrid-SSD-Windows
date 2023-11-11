@@ -419,10 +419,7 @@ namespace VHSSD
             public bool changes = false;
 
             void Save()
-            {
-                if (attributes.SecurityDescription == null)
-                    attributes.SecurityDescription = new byte[0];
-
+            {        
                 if (!changes)
                     return;
 
@@ -453,6 +450,9 @@ namespace VHSSD
                 fs.SecurityDescription = attributes.SecurityDescription;
 
                 fs.ReparseData = attributes.ReparseData;
+
+                if (attributes.SecurityDescription == null || attributes.SecurityDescription.Length == 0)
+                    fs.SecurityDescription = lastFS?.SecurityDescription ?? attributes.SecurityDescription;
 
                 // Get file tree
                 if (isDirectory)
