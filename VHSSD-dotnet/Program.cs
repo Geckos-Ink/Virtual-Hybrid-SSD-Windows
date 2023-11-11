@@ -92,7 +92,7 @@ namespace VHSSD
             FileSystemHost Host = (FileSystemHost)Host0;
             Host.SectorSize = ALLOCATION_UNIT;
             Host.SectorsPerAllocationUnit = 1;
-            Host.MaxComponentLength = ushort.MaxValue;
+            Host.MaxComponentLength = 255;
             Host.FileInfoTimeout = 1000;
             Host.CaseSensitiveSearch = false;
             Host.CasePreservedNames = true;
@@ -101,10 +101,10 @@ namespace VHSSD
             Host.PostCleanupWhenModifiedOnly = true;
             Host.PassQueryDirectoryPattern = false;
             Host.FlushAndPurgeOnCleanup = true;
-            Host.ReparsePoints = false;
+            Host.ReparsePoints = true;
             Host.ExtendedAttributes = true;
-            Host.AllowOpenInKernelMode = true;
-            Host.VolumeCreationTime = 0; //todo: save its creation time 
+            Host.AllowOpenInKernelMode = false;
+            Host.VolumeCreationTime = (ulong)Static.UnixTimeMS; //todo: save its creation time 
             Host.VolumeSerialNumber = 0;
             return STATUS_SUCCESS;
         }
@@ -138,7 +138,7 @@ namespace VHSSD
 
             FileAttributes = file.attributes.FileAttributes;
 
-            SecurityDescriptor = file.attributes.SecurityDescription ?? new byte[0];
+            SecurityDescriptor = file.attributes.SecurityDescription;
 
             return STATUS_SUCCESS;
         }
@@ -202,7 +202,6 @@ namespace VHSSD
         }
 
         #region Ex
-
         public override int CreateEx(string FileName, uint CreateOptions, uint GrantedAccess, uint FileAttributes, byte[] SecurityDescriptor, ulong AllocationSize, IntPtr ExtraBuffer, uint ExtraLength, bool ExtraBufferIsReparsePoint, out object FileNode, out object FileDesc, out FileInfo FileInfo, out string NormalizedName)
         {
             var file = vhfs.GetFile(FileName);
@@ -528,6 +527,8 @@ namespace VHSSD
             if (0 != ChangeTime)
                 file.attributes.ChangeTime = ChangeTime;
 
+            file.changes = true;
+
             FileInfo = file.GetFileInfo();
 
             return STATUS_SUCCESS;
@@ -540,6 +541,8 @@ namespace VHSSD
             Static.Debug.Write(new string[] { "SetReparsePoint", file.name });
 
             file.attributes.ReparseData = ReparseData;
+
+            file.changes = true;
 
             return STATUS_SUCCESS;
         }
@@ -609,7 +612,7 @@ namespace VHSSD
 
             Static.Debug.Write(new string[] { "GetSecurity", file.name });
 
-            SecurityDescriptor = file.attributes.SecurityDescription ?? new byte[0];
+            SecurityDescriptor = file.attributes.SecurityDescription;
 
             return STATUS_SUCCESS;
         }
@@ -625,6 +628,8 @@ namespace VHSSD
 
             file.attributes.SecurityDescription = SecurityDescriptor;
             //todo: implement Sections...
+
+            file.changes = true;
 
             return STATUS_SUCCESS;
         }
