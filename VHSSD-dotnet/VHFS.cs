@@ -555,6 +555,10 @@ namespace VHSSD
             public void Dispose()
             {
                 Save();
+
+                // Force parent saving
+                if (!isDirectory)
+                    parent?.Save(); 
             }
 
             public Fsp.Interop.FileInfo GetFileInfo()
