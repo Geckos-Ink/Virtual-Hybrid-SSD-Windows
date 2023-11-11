@@ -125,7 +125,7 @@ namespace VHSSD
         {
             var file = vhfs.GetFile(FileName);
 
-            Static.Debug.Write(new string[] { "GetSecurityByName", file.name });
+            Static.Debug.Write(new string[] { "GetSecurityByName", file?.name ?? "NOT_FOUND" });
 
             if (file == null)
             {
@@ -151,58 +151,51 @@ namespace VHSSD
             out FileInfo FileInfo,
             out String NormalizedName)
         {
-            try
+            var file = vhfs.GetFile(FileName);
+
+            Static.Debug.Write(new string[] { "Create", FileName });
+
+            if (file != null)
             {
-                var file = vhfs.GetFile(FileName);
-
-                Static.Debug.Write(new string[] { "Create", file.name });
-
-                if (file != null)
-                {
-                    FileNode = default(Object);
-                    FileDesc0 = file;
-                    NormalizedName = default(String);
-                    FileInfo = file.GetFileInfo();
-                    return STATUS_OBJECT_NAME_COLLISION;
-                }
-
-                if (0 == (CreateOptions & FILE_DIRECTORY_FILE))
-                {
-                    file = new VHFS.File(false);
-
-                    file.attributes.SecurityDescription = SecurityDescriptor;
-                    file.attributes.GrantedAccess = GrantedAccess;
-                    file.attributes.FileAttributes = FileAttributes;
-                }
-                else
-                {
-                    file = new VHFS.File(true);
-
-                    file.attributes.SecurityDescription = SecurityDescriptor;
-                    file.attributes.FileAttributes = FileAttributes;
-                }
-
-                file.attributes.CreationTime = Static.FileTime;
-                file.attributes.ChangeTime = Static.FileTime;
-                file.attributes.LastAccessTime = Static.FileTime;
-                file.attributes.LastWriteTime = Static.FileTime;
-
-                file.loaded = true;
-
-                vhfs.AddFile(file, FileName);
-
                 FileNode = default(Object);
                 FileDesc0 = file;
                 NormalizedName = default(String);
                 FileInfo = file.GetFileInfo();
+                return STATUS_OBJECT_NAME_COLLISION;
+            }
 
-                return STATUS_SUCCESS;
-            }
-            catch(Exception ex)
+            if (0 == (CreateOptions & FILE_DIRECTORY_FILE))
             {
-                //todo: save everything
-                throw ex;
+                file = new VHFS.File(false);
+
+                file.attributes.SecurityDescription = SecurityDescriptor;
+                file.attributes.GrantedAccess = GrantedAccess;
+                file.attributes.FileAttributes = FileAttributes;
             }
+            else
+            {
+                file = new VHFS.File(true);
+
+                file.attributes.SecurityDescription = SecurityDescriptor;
+                file.attributes.FileAttributes = FileAttributes;
+            }
+
+            file.attributes.CreationTime = Static.FileTime;
+            file.attributes.ChangeTime = Static.FileTime;
+            file.attributes.LastAccessTime = Static.FileTime;
+            file.attributes.LastWriteTime = Static.FileTime;
+
+            file.loaded = true;
+
+            vhfs.AddFile(file, FileName);
+
+            FileNode = default(Object);
+            FileDesc0 = file;
+            NormalizedName = default(String);
+            FileInfo = file.GetFileInfo();
+
+            return STATUS_SUCCESS;
+            
         }
 
         public override Int32 Open(
@@ -217,7 +210,7 @@ namespace VHSSD
 
             var file = vhfs.GetFile(FileName);
 
-            Static.Debug.Write(new string[] { "Open", file.name });
+            Static.Debug.Write(new string[] { "Open", FileName });
 
             if (file == null)
             {
@@ -226,7 +219,7 @@ namespace VHSSD
                 FileInfo = default(FileInfo);
                 NormalizedName = default(String);
 
-                return STATUS_FILE_NOT_AVAILABLE;
+                return STATUS_OBJECT_NAME_NOT_FOUND;
             }
 
             file.attributes.LastAccessTime = Static.FileTime;
