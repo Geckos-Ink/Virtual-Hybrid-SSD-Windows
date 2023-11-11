@@ -502,7 +502,7 @@ namespace VHSSD
 
             #region File
 
-            public void Read(IntPtr Buffer, UInt64 Offset, UInt32 Length,  out UInt32 PBytesTransferred)
+            public void Read(IntPtr Buffer, UInt64 Offset, UInt32 Length, out UInt32 PBytesTransferred)
             {
                 var bytes = vhfs.chucks.Read(ID, (long)Offset, Length);
                 Marshal.Copy(bytes, 0, Buffer, bytes.Length);
