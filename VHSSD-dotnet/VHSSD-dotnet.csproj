@@ -78,6 +78,7 @@
   <ItemGroup>
     <Compile Include="Chucks.cs" />
     <Compile Include="DB.cs" />
+    <Compile Include="Debug.cs" />
     <Compile Include="File.cs" />
     <Compile Include="INI.cs" />
     <Compile Include="Memory.cs" />

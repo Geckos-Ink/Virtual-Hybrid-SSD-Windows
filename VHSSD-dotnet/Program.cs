@@ -272,6 +272,8 @@ namespace VHSSD
         {
             var file = (VHFS.File)FileDesc0;
 
+            Static.Debug.Write(new string[] { "Cleanup", file.name });
+
             if ((Flags & CleanupDelete) != 0)
             {
                 file.Remove();   
@@ -283,6 +285,9 @@ namespace VHSSD
             Object FileDesc0)
         {
             var file = (VHFS.File)FileDesc0;
+
+            Static.Debug.Write(new string[] { "Close", file.name });
+
             file.Dispose();
         }
 
@@ -301,6 +306,8 @@ namespace VHSSD
                 PBytesTransferred = 0;
                 return STATUS_END_OF_FILE;
             }
+
+            Static.Debug.Write(new string[] { "Read", file.name, "Offset:", Offset.ToString(), "Length:", Length.ToString() });
 
             file.attributes.LastAccessTime = Static.FileTime;
 
@@ -330,6 +337,8 @@ namespace VHSSD
         {
             var file = (VHFS.File)FileDesc0;
 
+            Static.Debug.Write(new string[] { "Write", file.name, "Offset:", Offset.ToString(), "Length:", Length.ToString() });
+
             file.attributes.ChangeTime = Static.FileTime;
             file.attributes.LastAccessTime = Static.FileTime;
             file.attributes.LastWriteTime = Static.FileTime;
@@ -346,8 +355,12 @@ namespace VHSSD
             out FileInfo FileInfo)
         {
             var file = (VHFS.File)FileDesc0;
+
+            Static.Debug.Write(new string[] { "Flush", file.name });
+
             file.Flush();
             FileInfo = file.GetFileInfo();
+
             return STATUS_SUCCESS;
         }
 
@@ -357,7 +370,11 @@ namespace VHSSD
             out FileInfo FileInfo)
         {
             var file = (VHFS.File)FileDesc0;
+
+            Static.Debug.Write(new string[] { "GetFileInfo", file.name });
+
             FileInfo = file.GetFileInfo();
+
             return STATUS_SUCCESS;
         }
 
@@ -372,6 +389,8 @@ namespace VHSSD
             out FileInfo FileInfo)
         {
             var file = (VHFS.File)FileDesc0;
+
+            Static.Debug.Write(new string[] { "SetBasicInfo", file.name });
 
             if (unchecked((UInt32)(-1)) != FileAttributes)
                 file.attributes.FileAttributes = FileAttributes;
@@ -398,6 +417,8 @@ namespace VHSSD
         {
             var file = (VHFS.File)FileDesc0;
 
+            Static.Debug.Write(new string[] { "SetFileSize", file.name });
+
             file.SetSize(NewSize);
             FileInfo = file.GetFileInfo();
 
@@ -410,6 +431,8 @@ namespace VHSSD
             String FileName)
         {
             var file = (VHFS.File)FileDesc0;
+
+            Static.Debug.Write(new string[] { "CanDelete", file.name });
 
             if (file.isDirectory && file.files.Keys.Count > 0)
                 return STATUS_DIRECTORY_NOT_EMPTY;
@@ -424,8 +447,7 @@ namespace VHSSD
             String NewFileName,
             Boolean ReplaceIfExists)
         {
-            //FileName = ConcatPath(FileName);
-            //NewFileName = ConcatPath(NewFileName);
+            Static.Debug.Write(new string[] { "Rename", FileName, NewFileName, "ReplaceIfExists:", ReplaceIfExists.ToString() });
 
             vhfs.Rename(FileName, NewFileName, ReplaceIfExists);
 
@@ -437,6 +459,9 @@ namespace VHSSD
             ref Byte[] SecurityDescriptor)
         {
             var file = (VHFS.File)FileDesc0;
+
+            Static.Debug.Write(new string[] { "GetSecurity", file.name });
+
             SecurityDescriptor = file.attributes.SecurityDescription;
             return STATUS_SUCCESS;
         }
@@ -447,6 +472,8 @@ namespace VHSSD
             Byte[] SecurityDescriptor)
         {
             var file = (VHFS.File)FileDesc0;
+
+            Static.Debug.Write(new string[] { "SetSecurity", file.name });
 
             file.attributes.SecurityDescription = SecurityDescriptor;
             //todo: implement Sections...
@@ -464,6 +491,8 @@ namespace VHSSD
             out FileInfo FileInfo)
         {
             var dir = (VHFS.File) FileDesc0;
+
+            Static.Debug.Write(new string[] { "ReadDirectoryEntry", dir.name });
 
             var files = dir.ListFiles();
 
