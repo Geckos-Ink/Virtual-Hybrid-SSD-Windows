@@ -408,7 +408,10 @@ namespace VHSSD
                         foreach (var fid in lastFS.Files)
                         {
                             var file = new File(fid, this.vhfs, this);
-                            files.Set(file.name, file);
+                            if (file.lastFS != null)
+                                files.Set(file.name, file);
+                            else
+                                Console.WriteLine("ERROR EMPTY FILE LOAD");
                         }
                     }
                 }
