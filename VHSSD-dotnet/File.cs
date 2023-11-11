@@ -48,16 +48,25 @@ namespace VHSSD
             this.FileName = fileName;
         }
 
-        public bool justRead = false;
+        public bool justRead = true;
+        bool openedAsRead = false;
 
         void checkStream()
         {
+            if(stream != null && fstream != null && !justRead && openedAsRead)
+            {
+                fstream.Close();
+                stream = null;
+            } 
+
             if(stream == null)
             {
                 if(justRead)
                     fstream = new FileStream(FileName, FileMode.Open, FileAccess.Read);
                 else 
                     fstream = new FileStream(FileName, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+
+                openedAsRead = justRead;
 
                 stream = fstream;
 
@@ -69,6 +78,7 @@ namespace VHSSD
 
         public void Write(byte[] data, long pos = -1)
         {
+            justRead = false;
             checkStream();
 
             bool resize = pos == -1;
