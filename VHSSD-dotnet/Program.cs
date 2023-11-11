@@ -417,6 +417,8 @@ namespace VHSSD
         {
             var file = (VHFS.File)FileDesc;
 
+            Static.Debug.Write(new string[] { "SetReparsePoint", file.name });
+
             file.attributes.ReparseData = ReparseData;
 
             return STATUS_SUCCESS;
@@ -425,6 +427,8 @@ namespace VHSSD
         public override int GetReparsePoint(object FileNode, object FileDesc, string FileName, ref byte[] ReparseData)
         {
             var file = (VHFS.File)FileDesc;
+
+            Static.Debug.Write(new string[] { "GetReparsePoint", file.name });
 
             ReparseData = file.attributes.ReparseData;
 
