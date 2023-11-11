@@ -108,6 +108,8 @@ namespace VHSSD
         public override Int32 GetVolumeInfo(
             out VolumeInfo VolumeInfo)
         {
+            Static.Debug.Write(new string[] { "GetVolumeInfo" });
+
             VolumeInfo = default(VolumeInfo);
 
             //todo
@@ -122,6 +124,8 @@ namespace VHSSD
             ref Byte[] SecurityDescriptor)
         {
             var file = vhfs.GetFile(FileName);
+
+            Static.Debug.Write(new string[] { "GetSecurityByName", file.name });
 
             if (file == null)
             {
@@ -150,6 +154,8 @@ namespace VHSSD
             try
             {
                 var file = vhfs.GetFile(FileName);
+
+                Static.Debug.Write(new string[] { "Create", file.name });
 
                 if (file != null)
                 {
@@ -211,6 +217,8 @@ namespace VHSSD
 
             var file = vhfs.GetFile(FileName);
 
+            Static.Debug.Write(new string[] { "Open", file.name });
+
             if (file == null)
             {
                 FileNode = default(Object);
@@ -251,7 +259,9 @@ namespace VHSSD
         {
             var file = (VHFS.File)FileDesc0;
 
-            if(ReplaceFileAttributes) //todo: check if this could destroy FileAttributes
+            Static.Debug.Write(new string[] { "Overwrite", file.name });
+
+            if (ReplaceFileAttributes) //todo: check if this could destroy FileAttributes
                 file.attributes.FileAttributes = FileAttributes;
 
             //todo: Check AllocationSize behaviour
@@ -312,7 +322,6 @@ namespace VHSSD
             file.Read(Buffer, Offset, Length, out PBytesTransferred);
 
             Static.Debug.Write(new string[] { "Read", file.name, "Offset:", Offset.ToString(), "Length:", Length.ToString() });
-            Thread.SpinWait(1);
 
             //Console.WriteLine("Read: \tOffset: "+ Offset + "\tLength: "+Length+ "\tTransferred: "+ PBytesTransferred + "\tAllocationDiffer: " + (Offset % 4096));
 
@@ -464,6 +473,7 @@ namespace VHSSD
             Static.Debug.Write(new string[] { "GetSecurity", file.name });
 
             SecurityDescriptor = file.attributes.SecurityDescription;
+
             return STATUS_SUCCESS;
         }
         public override Int32 SetSecurity(
@@ -493,16 +503,23 @@ namespace VHSSD
         {
             var dir = (VHFS.File) FileDesc0;
 
-            Static.Debug.Write(new string[] { "ReadDirectoryEntry", dir.name });
+            if (!dir.isDirectory)
+            {
+                FileName = dir.name;
+                FileInfo = dir.GetFileInfo();
+                return false;
+            }
 
-            var files = dir.ListFiles();
+            Static.Debug.Write(new string[] { "ReadDirectoryEntry", dir.name });
 
             IEnumerator<String> Enumerator = (IEnumerator<String>)Context;
 
             if (null == Enumerator)
             {
+                var files = dir.ListFiles();
+
                 List<String> ChildrenFileNames = new List<String>();
-                if ("\\" != dir.name)
+                if (dir.parent != null)
                 {
                     /* if this is not the root directory add the dot entries */
                     if (null == Marker)
@@ -510,7 +527,17 @@ namespace VHSSD
                     if (null == Marker || "." == Marker)
                         ChildrenFileNames.Add("..");
                 }
-                ChildrenFileNames.AddRange(files);
+
+                if (Marker != null)
+                {
+                    if (dir.files.tree.ContainsKey(Marker.ToLower()))
+                        ChildrenFileNames.Add(Marker);
+                }
+                else
+                {
+                    ChildrenFileNames.AddRange(files);
+                }
+
                 Context = Enumerator = ChildrenFileNames.GetEnumerator();
             }
 
@@ -541,6 +568,10 @@ namespace VHSSD
                     {
                         FileInfo = file.GetFileInfo();
                         return true;
+                    }
+                    else
+                    {
+                        Console.WriteLine("DEBUG!!");
                     }
                 }
             }

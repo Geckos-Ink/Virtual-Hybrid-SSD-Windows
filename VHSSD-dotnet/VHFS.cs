@@ -33,6 +33,7 @@ using System.Threading.Tasks;
 using static VHSSD.DB;
 using static VHSSD.Ptfs;
 using static VHSSD.VHFS;
+using static VHSSD.VHFS.File;
 
 namespace VHSSD
 {
@@ -574,6 +575,8 @@ namespace VHSSD
                 Load(true);
 
                 var res = new Fsp.Interop.FileInfo();
+
+                attributes.AllocationSize = (ulong)(Math.Floor((double)attributes.FileSize/4096)*4096); //??
 
                 res.FileAttributes = attributes.FileAttributes;
                 res.ReparseTag = 0;
