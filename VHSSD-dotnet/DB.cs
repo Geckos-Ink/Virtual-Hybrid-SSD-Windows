@@ -1384,6 +1384,11 @@ namespace VHSSD
             }
         }
 
+        public class VHD : DBRow
+        {
+            public long MaxFiles = 0;
+        }
+
         public class FS : DBRow
         {
             public long ID;

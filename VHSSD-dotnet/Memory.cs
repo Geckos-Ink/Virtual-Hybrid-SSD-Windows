@@ -56,9 +56,9 @@ namespace VHSSD
 
             if(Keys.Contains(key))
             {
+                return;
                 tree[lkey] = value;
                 throw new Exception("Damn, Files re-set");
-                return;
             }
 
             Keys.Add(key);

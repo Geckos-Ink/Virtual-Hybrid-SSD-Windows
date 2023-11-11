@@ -45,10 +45,10 @@ namespace VHSSD
         public Chucks chucks;
 
         public File root;
-        public long MaxID = 0;
 
         public DB DB;
 
+        public DB.Table<DB.VHD> TableVHD;
         public DB.Table<DB.FS> TableFS;
         public DB.Table<DB.Drive> TableDrive;
 
@@ -60,10 +60,17 @@ namespace VHSSD
 
         public Sync Sync;
 
+        public DB.VHD Row;
+
         public VHFS() {
             Sets = new Settings();
 
             DB = new DB(this);
+
+            TableVHD = DB.GetTable<DB.VHD>();
+            Row = new VHD();
+            Row.AbsIndex = 0; // ergo: just me
+            Row = TableVHD.Get(Row) ?? Row;
 
             chucks = new Chucks(this);
 
@@ -345,7 +352,7 @@ namespace VHSSD
                 this.vhfs = vhfs;
 
                 if (this.ID == -1)
-                    this.ID = ++this.vhfs.MaxID;
+                    this.ID = ++this.vhfs.Row.MaxFiles;
             }
 
             #region LazyLoadSave
