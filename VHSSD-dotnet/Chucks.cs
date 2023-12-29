@@ -97,14 +97,14 @@ namespace VHSSD
             if(!chucks.TryGetValue(id, out idChucks))
             {
                 idChucks = new Dictionary<long, Chuck>();
-                chucks[id] = idChucks;
+                chucks.Add(id, idChucks);
             }
 
             Chuck chuck;
             if(!idChucks.TryGetValue(part, out chuck))
             {
                 chuck = new Chuck(this, id, part, row);
-                idChucks[part] = chuck;
+                idChucks.Add(part, chuck);
             }
 
             return chuck;

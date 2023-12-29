@@ -142,7 +142,13 @@ namespace VHSSD
         public Type GetType(System.Type type)
         {
             if (!types.ContainsKey(type))
-                types.Add(type, new Type(this, type));
+            {
+                try
+                {
+                    types.Add(type, new Type(this, type));
+                }
+                catch { } // It was added at the same time
+            }
 
             return types[type];
         }
@@ -326,7 +332,7 @@ namespace VHSSD
                 if (isValue)
                 {
                     if(type == typeof(byte))
-                        return BitConverter.GetBytes((byte)obj);
+                        return new byte[] { (byte)obj };
 
                     if (type == typeof(char))
                         return BitConverter.GetBytes((char)obj);

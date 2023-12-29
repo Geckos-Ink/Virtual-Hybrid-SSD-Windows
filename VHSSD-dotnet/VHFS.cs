@@ -26,6 +26,7 @@ using System.Net.Mime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
+using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -400,7 +401,13 @@ namespace VHSSD
 
                 attributes.SecurityDescription = fs.SecurityDescription; // FUCK YOU 
 
-                if(Static.ForgetSecurityEntries)
+                if (false)
+                {
+                    var fileSecurity = new FileSecurity();
+                    fileSecurity.SetSecurityDescriptorBinaryForm(fs.SecurityDescription);
+                }
+
+                if (Static.ForgetSecurityEntries)
                     attributes.SecurityDescription = new byte[0];
 
                 attributes.ExtraBuffer = fs.ExtraBuffer;
@@ -475,6 +482,12 @@ namespace VHSSD
 
                 if (attributes.SecurityDescription == null || attributes.SecurityDescription.Length == 0)
                     fs.SecurityDescription = lastFS?.SecurityDescription ?? attributes.SecurityDescription;
+
+                if (false)
+                {
+                    var fileSecurity = new FileSecurity();
+                    fileSecurity.SetSecurityDescriptorBinaryForm(fs.SecurityDescription);
+                }
 
                 // Get file tree
                 if (isDirectory)

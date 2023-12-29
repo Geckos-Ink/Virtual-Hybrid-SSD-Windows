@@ -94,7 +94,7 @@ namespace VHSSD
             Host.SectorSize = 4096; // should 4096
             Host.SectorsPerAllocationUnit = 1;
             Host.MaxComponentLength = 1023;
-            Host.FileInfoTimeout = 1;
+            Host.FileInfoTimeout = 1000;
             Host.CaseSensitiveSearch = false;
             Host.CasePreservedNames = true;
             Host.UnicodeOnDisk = false;
@@ -105,10 +105,10 @@ namespace VHSSD
             Host.ReparsePoints = true;
             Host.ExtendedAttributes = true;
             Host.AllowOpenInKernelMode = true;
-            Host.EaTimeout = 1;
+            Host.EaTimeout = 1000;
             Host.WslFeatures = false;
             Host.ReparsePointsAccessCheck = true;
-            Host.SecurityTimeout = 1;
+            Host.SecurityTimeout = 1000;
             Host.VolumeCreationTime = 1703808432000; //(ulong)Static.UnixTimeMS; //todo: save its creation time 
             Host.VolumeSerialNumber = 1994;
 
@@ -852,7 +852,7 @@ namespace VHSSD
 
             try
             {
-                bool Syncronize = false;
+                bool Syncronize = true;
                 String DebugLogFile = null;
                 UInt32 DebugFlags = 0;
                 String VolumePrefix = null;
