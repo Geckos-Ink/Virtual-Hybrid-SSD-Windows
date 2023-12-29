@@ -632,6 +632,14 @@ namespace VHSSD
 
             public void Flush()
             {
+                if (vhfs.chucks.chucks.ContainsKey(ID))
+                {
+                    foreach (var chuck in vhfs.chucks.chucks[ID])
+                    {
+                        chuck.Value.Flush();
+                    }
+                }
+
                 Save();
 
                 // Force parent saving
@@ -653,14 +661,6 @@ namespace VHSSD
             public void Dispose()
             {
                 Flush();
-
-                if (!vhfs.chucks.chucks.ContainsKey(ID))
-                    return;
-
-                foreach (var chuck in vhfs.chucks.chucks[ID])
-                {
-                    chuck.Value.Dispose();
-                }
             }
 
             public Fsp.Interop.FileInfo GetFileInfo()
