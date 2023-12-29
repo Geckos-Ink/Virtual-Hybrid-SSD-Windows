@@ -269,7 +269,7 @@ namespace VHSSD
                 file = new VHFS.File(true);
             }
 
-            file.ops++;
+            file.Ops++;
 
             file.attributes.SecurityDescription = SecurityDescriptor;
             file.attributes.GrantedAccess = GrantedAccess;
@@ -375,7 +375,7 @@ namespace VHSSD
 
             var file = vhfs.GetFile(FileName);
 
-            file.ops++;
+            file.Ops++;
 
             Static.Debug.Write(new string[] { "Open", FileName });
 
@@ -457,7 +457,10 @@ namespace VHSSD
 
             Static.Debug.Write(new string[] { "Close", file.name });
 
-            file.Dispose();
+            file.Ops--;
+
+            if(file.Ops == 0)
+                file.Dispose();
         }
 
         public override Int32 Read(
@@ -888,6 +891,8 @@ namespace VHSSD
 
                 while (Console.ReadKey().Key != ConsoleKey.Enter)
                     Thread.Sleep(1);
+
+                Host.Unmount();
 
                 vhfs.Close();
                 this.Stop();

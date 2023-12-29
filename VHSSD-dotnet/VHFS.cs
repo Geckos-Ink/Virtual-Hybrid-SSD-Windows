@@ -307,7 +307,7 @@ namespace VHSSD
             public bool isDirectory;
 
             internal bool open = false;
-            internal int ops = 0;
+            internal int Ops = 0;
 
             // Directory
             public Tree<File> files;
@@ -633,24 +633,19 @@ namespace VHSSD
 
             public void Dispose()
             {
-                this.ops--;
+                Save();
 
-                if (this.ops == 0)
+                // Force parent saving
+                if (isDirectory)
                 {
-                    Save();
-
-                    // Force parent saving
-                    if (isDirectory)
+                    foreach (var file in files.tree)
                     {
-                        foreach (var file in files.tree)
-                        {
-                            file.Value.Save();
-                        }
+                        file.Value.Save();
                     }
-                    else
-                    {
-                        parent?.Save();
-                    }
+                }
+                else
+                {
+                    parent?.Save();
                 }
             }
 
