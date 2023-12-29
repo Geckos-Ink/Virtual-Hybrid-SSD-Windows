@@ -126,6 +126,8 @@ namespace VHSSD
             byte[] buffer = new byte[len];
             stream.Read(buffer, 0, buffer.Length);
 
+            //Static.Debug.Write(new string[] { "Read Stream: ", len.ToString(), pos.ToString(), buffer.Length.ToString() });
+
             return buffer;
         }
 

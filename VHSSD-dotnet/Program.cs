@@ -92,21 +92,21 @@ namespace VHSSD
             FileSystemHost Host = (FileSystemHost)Host0;
 
             Host.SectorSize = 4096; // should 4096
-            Host.SectorsPerAllocationUnit = 1;
+            Host.SectorsPerAllocationUnit = 1024;
             Host.MaxComponentLength = 1023;
             Host.FileInfoTimeout = 1000;
-            Host.CaseSensitiveSearch = false;
+            Host.CaseSensitiveSearch = true;
             Host.CasePreservedNames = true;
-            Host.UnicodeOnDisk = false;
-            Host.PersistentAcls = false;
+            Host.UnicodeOnDisk = true;
+            Host.PersistentAcls = true;
             Host.PostCleanupWhenModifiedOnly = true;
             Host.PassQueryDirectoryPattern = false;
-            Host.FlushAndPurgeOnCleanup = false;
+            Host.FlushAndPurgeOnCleanup = true;
             Host.ReparsePoints = true;
             Host.ExtendedAttributes = true;
             Host.AllowOpenInKernelMode = true;
             Host.EaTimeout = 1000;
-            Host.WslFeatures = false;
+            Host.WslFeatures = true;
             Host.ReparsePointsAccessCheck = true;
             Host.SecurityTimeout = 1000;
             Host.VolumeCreationTime = 1703808432000; //(ulong)Static.UnixTimeMS; //todo: save its creation time 
