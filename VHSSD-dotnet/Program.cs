@@ -844,23 +844,11 @@ namespace VHSSD
                 readDriveSettings(dprops, false);
             }
 
-            if (vhfs.NewFS)
+            /*if (vhfs.NewFS || true)
             {
-                var fileSecurity = new FileSecurity();
-
-                // Add access rules to the security descriptor
-                fileSecurity.AddAccessRule(new FileSystemAccessRule("Administrators",
-                    FileSystemRights.FullControl, AccessControlType.Allow));
-                fileSecurity.AddAccessRule(new FileSystemAccessRule("SYSTEM",
-                    FileSystemRights.FullControl, AccessControlType.Allow));
-
-                // Convert to a binary security descriptor
-                byte[] binaryDescriptor = fileSecurity.GetSecurityDescriptorBinaryForm();
-                var ssdl = fileSecurity.GetSecurityDescriptorSddlForm(AccessControlSections.All);
-
                 var cfs = System.IO.File.GetAccessControl("C:/");
                 vhfs.root.attributes.SecurityDescription = cfs.GetSecurityDescriptorBinaryForm();
-            }
+            }*/
 
             try
             {
