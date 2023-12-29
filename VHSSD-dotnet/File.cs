@@ -22,6 +22,7 @@ using System.IO;
 using System.IO.Pipes;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using static VHSSD.Chucks;
 
@@ -64,10 +65,21 @@ namespace VHSSD
                 if (!System.IO.File.Exists(FileName))
                     justRead = false;
 
-                if(justRead)
+                if (justRead)
+                {
                     fstream = new FileStream(FileName, FileMode.Open, FileAccess.Read);
-                else 
-                    fstream = new FileStream(FileName, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+                }
+                else
+                {
+                    try
+                    {
+                        fstream = new FileStream(FileName, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+                    }
+                    catch
+                    {
+                        Thread.Sleep(1);
+                    }
+                }
 
                 openedAsRead = justRead;
 

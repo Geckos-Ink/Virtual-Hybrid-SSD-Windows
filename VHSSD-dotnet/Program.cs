@@ -269,6 +269,7 @@ namespace VHSSD
                 file = new VHFS.File(true);
             }
 
+            file.ops++;
 
             file.attributes.SecurityDescription = SecurityDescriptor;
             file.attributes.GrantedAccess = GrantedAccess;
@@ -373,6 +374,8 @@ namespace VHSSD
         {
 
             var file = vhfs.GetFile(FileName);
+
+            file.ops++;
 
             Static.Debug.Write(new string[] { "Open", FileName });
 
@@ -852,7 +855,8 @@ namespace VHSSD
                 byte[] binaryDescriptor = fileSecurity.GetSecurityDescriptorBinaryForm();
                 var ssdl = fileSecurity.GetSecurityDescriptorSddlForm(AccessControlSections.All);
 
-                vhfs.root.attributes.SecurityDescription = binaryDescriptor;
+                var cfs = System.IO.File.GetAccessControl("C:/");
+                vhfs.root.attributes.SecurityDescription = cfs.GetSecurityDescriptorBinaryForm();
             }
 
             try
