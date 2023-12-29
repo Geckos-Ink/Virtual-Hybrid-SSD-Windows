@@ -27,13 +27,13 @@ using VolumeInfo = Fsp.Interop.VolumeInfo;
 using FileInfo = Fsp.Interop.FileInfo;
 using System.Collections.Generic;
 using System.Threading;
+using System.Net.NetworkInformation;
+using System.Security.Cryptography.X509Certificates;
 
 namespace VHSSD
 {
     class Ptfs : FileSystemBase
     {
-        protected const int ALLOCATION_UNIT = 4096;
-
         protected static void ThrowIoExceptionWithHResult(Int32 HResult)
         {
             throw new IOException(null, HResult);
@@ -90,22 +90,28 @@ namespace VHSSD
         public override Int32 Init(Object Host0)
         {
             FileSystemHost Host = (FileSystemHost)Host0;
-            Host.SectorSize = ALLOCATION_UNIT;
+
+            Host.SectorSize = 4096; // should 4096
             Host.SectorsPerAllocationUnit = 1;
-            Host.MaxComponentLength = 255;
-            Host.FileInfoTimeout = 1000;
+            Host.MaxComponentLength = 1023;
+            Host.FileInfoTimeout = 1;
             Host.CaseSensitiveSearch = false;
             Host.CasePreservedNames = true;
-            Host.UnicodeOnDisk = true;
+            Host.UnicodeOnDisk = false;
             Host.PersistentAcls = false;
             Host.PostCleanupWhenModifiedOnly = true;
             Host.PassQueryDirectoryPattern = false;
-            Host.FlushAndPurgeOnCleanup = true;
+            Host.FlushAndPurgeOnCleanup = false;
             Host.ReparsePoints = true;
             Host.ExtendedAttributes = true;
-            Host.AllowOpenInKernelMode = false;
-            Host.VolumeCreationTime = (ulong)Static.UnixTimeMS; //todo: save its creation time 
-            Host.VolumeSerialNumber = 0;
+            Host.AllowOpenInKernelMode = true;
+            Host.EaTimeout = 1;
+            Host.WslFeatures = false;
+            Host.ReparsePointsAccessCheck = true;
+            Host.SecurityTimeout = 1;
+            Host.VolumeCreationTime = 1703808432000; //(ulong)Static.UnixTimeMS; //todo: save its creation time 
+            Host.VolumeSerialNumber = 1994;
+
             return STATUS_SUCCESS;
         }
         public override Int32 GetVolumeInfo(
@@ -202,6 +208,43 @@ namespace VHSSD
         }
 
         #region Ex
+
+        // Override the GetEaSize method
+        public int GetEaSize(
+            string FileName,
+            out uint EaSize,
+            ref FileInfo FileInfo)
+        {
+            // Initialize the EA size to zero
+            EaSize = 0;
+
+            Static.Debug.Write(new string[] { "GetEaSize", FileName });
+
+            try
+            {
+                var file = vhfs.GetFile(FileName);
+
+                if (file == null)
+                    throw new Exception("File not found");
+
+                FileInfo = file.GetFileInfo();
+                EaSize = (uint)(file.attributes.ExtraBuffer?.Length ?? 0);
+                
+                return STATUS_SUCCESS;
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions and return an appropriate NtStatus
+                // For example, on a generic error:
+                // return NtStatus.STATUS_UNSUCCESSFUL;
+
+                // Log the exception for debugging purposes
+                Console.WriteLine("Error in GetEaSize: " + ex.Message);
+
+                return STATUS_OBJECT_NAME_NOT_FOUND;
+            }
+        }
+
         public override int CreateEx(string FileName, uint CreateOptions, uint GrantedAccess, uint FileAttributes, byte[] SecurityDescriptor, ulong AllocationSize, IntPtr ExtraBuffer, uint ExtraLength, bool ExtraBufferIsReparsePoint, out object FileNode, out object FileDesc, out FileInfo FileInfo, out string NormalizedName)
         {
             var file = vhfs.GetFile(FileName);
@@ -684,6 +727,7 @@ namespace VHSSD
 
             while (Enumerator.MoveNext())
             {
+                Context = Enumerator;
                 String FullFileName = Enumerator.Current;
                 if ("." == FullFileName)
                 {
@@ -719,6 +763,7 @@ namespace VHSSD
 
             FileName = default(String);
             FileInfo = default(FileInfo);
+            Context = Enumerator;
             return false;
 
         }
@@ -748,13 +793,18 @@ namespace VHSSD
 
         protected override void OnStart(String[] Args)
         {
+            Console.WriteLine("Press r to reset:");
+            var reset = Console.ReadKey();
+            if (reset.KeyChar == 'r')
+                Static.DebugResetEnv = true;
+
             var settings = new INI("drive.ini");
             Console.WriteLine("drive.ini loaded");
 
             var letter = settings.Props["letter"] ?? "X";
             var name = settings.Props["name"] ?? "VHSSD";
 
-            vhfs = new VHFS();
+            vhfs = new VHFS();  
 
             var ssd = settings.Props.Get("SSD");
             var hdd = settings.Props.Get("HDD");
@@ -788,8 +838,26 @@ namespace VHSSD
                 readDriveSettings(dprops, false);
             }
 
+            if (vhfs.NewFS)
+            {
+                var fileSecurity = new FileSecurity();
+
+                // Add access rules to the security descriptor
+                fileSecurity.AddAccessRule(new FileSystemAccessRule("Administrators",
+                    FileSystemRights.FullControl, AccessControlType.Allow));
+                fileSecurity.AddAccessRule(new FileSystemAccessRule("SYSTEM",
+                    FileSystemRights.FullControl, AccessControlType.Allow));
+
+                // Convert to a binary security descriptor
+                byte[] binaryDescriptor = fileSecurity.GetSecurityDescriptorBinaryForm();
+                var ssdl = fileSecurity.GetSecurityDescriptorSddlForm(AccessControlSections.All);
+
+                vhfs.root.attributes.SecurityDescription = binaryDescriptor;
+            }
+
             try
             {
+                bool Syncronize = false;
                 String DebugLogFile = null;
                 UInt32 DebugFlags = 0;
                 String VolumePrefix = null;
@@ -805,17 +873,19 @@ namespace VHSSD
 
                 Host = new FileSystemHost(Ptfs = new Ptfs(vhfs));
                 Host.Prefix = VolumePrefix;
-                if (0 > Host.Mount(MountPoint, null, true, DebugFlags))
+
+                if (0 > Host.MountEx(MountPoint, 0, vhfs.root.attributes.SecurityDescription, Syncronize, DebugFlags))
                     throw new IOException("cannot mount file system");
+
                 MountPoint = Host.MountPoint();
                 _Host = Host;
-
 
                 Console.WriteLine("Press Enter to close the program...");
 
                 while (Console.ReadKey().Key != ConsoleKey.Enter)
                     Thread.Sleep(1);
 
+                vhfs.Close();
                 this.Stop();
 
                 return;

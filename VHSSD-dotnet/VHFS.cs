@@ -86,6 +86,14 @@ namespace VHSSD
             Sync = new Sync(this);
         }
 
+        internal bool NewFS
+        {
+            get
+            {
+                return DB.newFS;
+            }
+        }
+
         public class Settings
         {
             public long chuckSize = 1024 * 1024; // 1 MB
@@ -390,7 +398,9 @@ namespace VHSSD
                 attributes.FileSize = fs.FileSize;
 
                 attributes.SecurityDescription = fs.SecurityDescription; // FUCK YOU 
-                attributes.SecurityDescription = new byte[0];
+
+                if(Static.ForgetSecurityEntries)
+                    attributes.SecurityDescription = new byte[0];
 
                 attributes.ExtraBuffer = fs.ExtraBuffer;
                 attributes.ReparseData = fs.ReparseData;

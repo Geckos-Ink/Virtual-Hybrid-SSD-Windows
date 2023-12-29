@@ -39,6 +39,7 @@ namespace VHSSD
     {
         VHFS vhfs;
         string dir;
+        internal bool newFS = false;
 
         public DB(VHFS vhfs) 
         {
@@ -48,7 +49,7 @@ namespace VHSSD
             Static.CreateDirIfNotExists(dataDir);
 
             dir = dataDir + vhfs.Name+"/";
-            Static.CreateDirIfNotExists(dir);
+            newFS = Static.CreateDirIfNotExists(dir);
         }
 
         #region BytesTables 

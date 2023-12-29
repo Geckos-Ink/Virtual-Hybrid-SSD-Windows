@@ -18,10 +18,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.ComTypes;
+using System.Security.AccessControl;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace VHSSD
@@ -34,6 +37,8 @@ namespace VHSSD
         /// Enable it just for debug purposes: it reset ALL data at every startup
         /// </summary>
         public static bool DebugResetEnv = false;
+
+        public static bool ForgetSecurityEntries = false;
 
         public static long UnixTimeMS
         {
@@ -67,11 +72,12 @@ namespace VHSSD
             }
         }
 
-        public static void CreateDirIfNotExists(string path)
+        public static bool CreateDirIfNotExists(string path)
         {
             if (!Directory.Exists(path))
             {
                 Directory.CreateDirectory(path);
+                return true;
             }
             else
             {
@@ -79,8 +85,11 @@ namespace VHSSD
                 {
                     Directory.Delete(path, true);
                     Directory.CreateDirectory(path);
+                    return true;
                 }
             }
+
+            return false;
         }
     }
 
