@@ -325,11 +325,10 @@ namespace VHSSD
 
                 checkDirectory();
 
-                if (ID == 0)
-                {
-                    Load(false); // it's root directory
-                    loadedFiles = true;
-                }
+                if(ID == 0)
+                    Load(false);
+
+                loadedFiles = true;
             }
 
             public File(long id, VHFS vhfs, File parent=null)
@@ -633,19 +632,6 @@ namespace VHSSD
 
             public void Flush()
             {
-                if (!vhfs.chucks.chucks.ContainsKey(ID))
-                    return;
-
-                foreach(var chuck in vhfs.chucks.chucks[ID])
-                {
-                    chuck.Value.Flush();
-                }
-            }
-
-            #endregion
-
-            public void Dispose()
-            {
                 Save();
 
                 // Force parent saving
@@ -659,6 +645,21 @@ namespace VHSSD
                 else
                 {
                     parent?.Save();
+                }
+            }
+
+            #endregion
+
+            public void Dispose()
+            {
+                Flush();
+
+                if (!vhfs.chucks.chucks.ContainsKey(ID))
+                    return;
+
+                foreach (var chuck in vhfs.chucks.chucks[ID])
+                {
+                    chuck.Value.Dispose();
                 }
             }
 

@@ -29,6 +29,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Net.NetworkInformation;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Principal;
 
 namespace VHSSD
 {
@@ -100,7 +101,7 @@ namespace VHSSD
             Host.UnicodeOnDisk = true;
             Host.PersistentAcls = true;
             Host.PostCleanupWhenModifiedOnly = true;
-            Host.PassQueryDirectoryPattern = false;
+            Host.PassQueryDirectoryPattern = true;
             Host.FlushAndPurgeOnCleanup = true;
             Host.ReparsePoints = true;
             Host.ExtendedAttributes = true;
@@ -142,8 +143,9 @@ namespace VHSSD
                 return STATUS_OBJECT_NAME_NOT_FOUND;
             }
 
-            FileAttributes = file.attributes.FileAttributes;
+            file.Load(false);
 
+            FileAttributes = file.attributes.FileAttributes;
             SecurityDescriptor = file.attributes.SecurityDescription;
 
             return STATUS_SUCCESS;
@@ -293,6 +295,8 @@ namespace VHSSD
             NormalizedName = default(String);
             FileInfo = file.GetFileInfo();
 
+            file.Ops++;
+
             return STATUS_SUCCESS;
         }
 
@@ -397,7 +401,7 @@ namespace VHSSD
 
                 FileNode = file;
                 FileDesc0 = file;
-                NormalizedName = default(string);
+                NormalizedName = file.name;
                 FileInfo = file.GetFileInfo();
                 return STATUS_SUCCESS;
             }
@@ -459,7 +463,7 @@ namespace VHSSD
 
             file.Ops--;
 
-            if(file.Ops == 0)
+            if(file.Ops <= 0)
                 file.Dispose();
         }
 
@@ -475,6 +479,7 @@ namespace VHSSD
 
             if (Offset > (UInt64)file.attributes.FileSize)
             {
+                Console.WriteLine("END OF FILE DETECTED");
                 PBytesTransferred = 0;
                 return STATUS_END_OF_FILE;
             }
@@ -483,7 +488,7 @@ namespace VHSSD
 
             file.Read(Buffer, Offset, Length, out PBytesTransferred);
 
-            Static.Debug.Write(new string[] { "Read", file.name, "Offset:", Offset.ToString(), "Length:", Length.ToString() });
+            Static.Debug.Write(new string[] { "Read", file.name, "Offset:", Offset.ToString(), "Length:", Length.ToString(), "BytesTransferred:", PBytesTransferred.ToString() });
 
             //Console.WriteLine("Read: \tOffset: "+ Offset + "\tLength: "+Length+ "\tTransferred: "+ PBytesTransferred + "\tAllocationDiffer: " + (Offset % 4096));
 
@@ -564,6 +569,8 @@ namespace VHSSD
 
             Static.Debug.Write(new string[] { "SetBasicInfo", file.name });
 
+            file.Load(false);
+
             if (unchecked((UInt32)(-1)) != FileAttributes)
                 file.attributes.FileAttributes = FileAttributes;
             if (0 != CreationTime)
@@ -601,6 +608,7 @@ namespace VHSSD
 
             Static.Debug.Write(new string[] { "GetReparsePoint", file.name });
 
+            file.Load(false);
             ReparseData = file.attributes.ReparseData;
 
             return STATUS_SUCCESS;
@@ -660,6 +668,7 @@ namespace VHSSD
 
             Static.Debug.Write(new string[] { "GetSecurity", file.name });
 
+            file.Load(false);
             SecurityDescriptor = file.attributes.SecurityDescription;
 
             return STATUS_SUCCESS;
@@ -844,17 +853,17 @@ namespace VHSSD
                 readDriveSettings(dprops, false);
             }
 
-            /*if (vhfs.NewFS || true)
+            if (vhfs.NewFS)
             {
-                var cfs = System.IO.File.GetAccessControl("C:/");
-                vhfs.root.attributes.SecurityDescription = cfs.GetSecurityDescriptorBinaryForm();
-            }*/
+                FileSecurity fileSecurity = System.IO.File.GetAccessControl("E:/");
+                vhfs.root.attributes.SecurityDescription = fileSecurity.GetSecurityDescriptorBinaryForm();
+            }
 
             try
             {
-                bool Syncronize = true;
+                bool Syncronize = false;
                 String DebugLogFile = null;
-                UInt32 DebugFlags = 0;
+                UInt32 DebugFlags = 1;
                 String VolumePrefix = null;
                 String PassThrough = null;
                 String MountPoint = null;

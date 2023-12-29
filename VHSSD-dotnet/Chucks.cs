@@ -486,7 +486,7 @@ namespace VHSSD
                     GetHDD().Delete();
             }
 
-            public void Flush()
+            public void Dispose()
             {
                 if (fileHDD != null)
                     fileHDD.Flush();
